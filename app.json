@@ -1,42 +1,40 @@
 {
   "expo": {
-    "name": "travelsuperapp",
-    "slug": "travelsuperapp",
+    "name": "Your App Name",
+    "slug": "your-app-slug",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "travelsuperapp",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
+    "userInterfaceStyle": "light",
+    "scheme": "your-app-scheme",
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
+      "expo-splash-screen",
+      "expo-web-browser"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.yourapp"
+    },
+    "android": {
+      "package": "com.yourcompany.yourapp",
+      "intentFilters": [
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "your-domain.com"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
-    ],
-    "experiments": {
-      "typedRoutes": true
+    },
+    "web": {
     }
   }
 }
