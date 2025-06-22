@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Your App Name",
-    "slug": "your-app-slug",
+    "name": "WanderMate",
+    "slug": "wandermate",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "your-app-scheme",
+    "scheme": "wandermate",
     "plugins": [
       "expo-router",
       "expo-splash-screen",
@@ -16,10 +16,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.yourapp"
+      "bundleIdentifier": "com.wandermate.app"
     },
     "android": {
-      "package": "com.yourcompany.yourapp",
+      "package": "com.wandermate.app",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -27,7 +27,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "your-domain.com"
+              "host": "wandermate.com"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]

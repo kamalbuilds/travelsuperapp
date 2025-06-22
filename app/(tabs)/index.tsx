@@ -1,157 +1,227 @@
-import type { Proof } from '@reclaimprotocol/reactnative-sdk';
-import { ReclaimProofRequest } from '@reclaimprotocol/reactnative-sdk';
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { Button, Linking, StyleSheet, Text, View } from 'react-native';
+import RecommendationCarousel from '@/components/RecommendationCarousel';
+import TripCard from '@/components/TripCard';
+import ReclaimModal from '@/components/reclaim/ReclaimModal';
+import { useApp } from '@/contexts/AppContext';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const APP_ID = '';
-const APP_SECRET = '';
-const PROVIDER_ID = '';
-const APP_SCHEME = 'exp://192.168.0.112:8081';
+// Mock data for recommendations
+const mockRecommendations = [
+  {
+    id: '1',
+    title: 'Bali Paradise',
+    description: 'Experience the perfect blend of culture and relaxation',
+    price: '₹45,000',
+    image: 'https://example.com/bali.jpg',
+    rating: 4.8,
+  },
+  {
+    id: '2',
+    title: 'Swiss Alps Adventure',
+    description: 'Mountain adventures and scenic beauty',
+    price: '₹75,000',
+    image: 'https://example.com/swiss.jpg',
+    rating: 4.9,
+  },
+  {
+    id: '3',
+    title: 'Tokyo Explorer',
+    description: 'Modern city life with traditional culture',
+    price: '₹65,000',
+    image: 'https://example.com/tokyo.jpg',
+    rating: 4.7,
+  },
+];
 
-export default function App() {
-  const [status, setStatus] = useState<string>('');
-  const [extracted, setExtracted] = useState<string | null>(null);
-  const [proofObject, setProofObject] = useState<string | null>(null);
-  const [reclaimProofRequest, setReclaimProofRequest] = useState<ReclaimProofRequest | null>(null);
-  const [requestUrl, setRequestUrl] = useState<string | null>(null);
+const mockTrips = [
+  {
+    id: '1',
+    destination: 'Bali, Indonesia',
+    airline: 'Singapore Airlines',
+    hotel: 'Bali Resort & Spa',
+    price: '₹45,000',
+    duration: '7 days',
+    image: 'https://example.com/bali.jpg',
+    status: 'upcoming' as const,
+    date: '2024-03-15',
+  },
+  {
+    id: '2',
+    destination: 'Swiss Alps',
+    airline: 'Lufthansa',
+    hotel: 'Mountain View Lodge',
+    price: '₹75,000',
+    duration: '10 days',
+    image: 'https://example.com/swiss.jpg',
+    status: 'upcoming' as const,
+    date: '2024-04-20',
+  },
+];
 
-  useEffect(() => {
-    initializeReclaimProofRequest();
-    setupDeepLinking();
-  }, []);
+export default function HomeScreen() {
+  const { state, dispatch } = useApp();
+  const [showReclaimModal, setShowReclaimModal] = useState(false);
 
-  function setupDeepLinking() {
-    Linking.addEventListener('url', handleDeepLink);
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink({url});
-      }
-    });
+  const handlePlanTrip = () => {
+    router.push('/plan-trip');
+  };
 
-    return () => {
-      Linking.removeAllListeners('url');
-    };
-  }
+  const handleTripPress = (trip: any) => {
+    router.push(`/trip-details/${trip.id}`);
+  };
 
-  function handleDeepLink(event: {url: string}) {
-    console.log('Deep link received:', event.url);
-    // You can add logic here to handle the deep link
-  }
+  const handleRecommendationPress = (recommendation: any) => {
+    // Navigate to plan trip with pre-filled data
+    router.push('/plan-trip');
+  };
 
-  async function initializeReclaimProofRequest() {
-    try {
-      const proofRequest = await ReclaimProofRequest.init(
-        "APP_ID",
-        "APP_SECRET",
-        "PROVIDER_ID",
-      );
-      setReclaimProofRequest(proofRequest);
-
-      proofRequest.addContext('0x00000000000', 'Example context message');
-      proofRequest.setRedirectUrl(`${APP_SCHEME}proof`);
-
-      console.log('Proof request initialized:', proofRequest.toJsonString());
-    } catch (error) {
-      console.error('Error initializing ReclaimProofRequest:', error);
-    }
-  }
-
-  async function startReclaimSession() {
-    if (!reclaimProofRequest) {
-      console.error('ReclaimProofRequest not initialized');
-      return;
-    }
-
-    try {
-      setStatus('Starting Reclaim session...');
-
-      const url = await reclaimProofRequest.getRequestUrl();
-      setRequestUrl(url);
-      
-      const canOpen = await Linking.canOpenURL(url);
-      if (canOpen) {
-        await Linking.openURL(url);
-        setStatus('Session started. Waiting for proof...');
-      } else {
-        setStatus('Unable to open URL automatically. Please copy and open the URL manually.');
-      }
-
-      const statusUrl = reclaimProofRequest.getStatusUrl();
-      console.log('Status URL:', statusUrl);
-
-      await reclaimProofRequest.startSession({
-        onSuccess: async (proof: Proof | Proof[] | string | undefined) => {
-          if (proof){
-            if (typeof proof === 'string') {
-              console.log('SDK Message:', proof)
-              setExtracted(proof)
-            } else if (typeof proof !== 'string') {  
-              console.log('Proof received:', proof);
-              if (Array.isArray(proof)) {
-                setExtracted(JSON.stringify(proof.map(p => p.claimData.context)))
-              } else {
-                setExtracted(JSON.stringify(proof.claimData.context));
-              }
-            }
-            setStatus('Proof received!');
-            setProofObject(JSON.stringify(proof, null, 2));
-          }
-
-        },
-        onError: (error: Error) => {
-          console.error('Error in proof generation:', error);
-          setStatus(`Error in proof generation: ${error.message}`);
-        },
-      });
-    } catch (error) {
-      console.error('Error starting Reclaim session:', error);
-      setStatus(`Error starting Reclaim session`);
-    }
-  }
+  const handleReclaimVerification = () => {
+    setShowReclaimModal(true);
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>React Native Reclaim Demo</Text>
-      <Button onPress={startReclaimSession} title="Start Reclaim Session" />
-      <Text style={styles.status}>{status}</Text>
-      {requestUrl && (
-        <Text style={styles.url}>Request URL: {requestUrl}</Text>
-      )}
-      {proofObject && (
-        <View style={styles.proofContainer}>
-          <Text style={styles.subtitle}>Proof Data:</Text>
-          <Text>{proofObject}</Text>
-        </View>
-      )}
-    </View>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.greeting}>
+          Hello, {state.currentUser?.name || 'Traveler'}! 👋
+        </Text>
+        <Text style={styles.subtitle}>Ready for your next adventure?</Text>
+      </View>
+
+      {/* Reclaim Verification Button */}
+      <TouchableOpacity style={styles.reclaimButton} onPress={handleReclaimVerification}>
+        <Text style={styles.reclaimButtonText}>🔐 Verify with Reclaim</Text>
+      </TouchableOpacity>
+
+      {/* Recommended Trip */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Recommended for You</Text>
+        <TripCard
+          destination="Bali, Indonesia"
+          airline="Singapore Airlines"
+          hotel="Bali Resort & Spa"
+          price="₹45,000"
+          duration="7 days"
+          image="https://example.com/bali.jpg"
+          onPress={handlePlanTrip}
+          isRecommended={true}
+        />
+        <TouchableOpacity style={styles.planButton} onPress={handlePlanTrip}>
+          <Text style={styles.planButtonText}>Plan My Trip</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* More Recommendations */}
+      <RecommendationCarousel
+        title="Explore More Destinations"
+        recommendations={mockRecommendations}
+        onItemPress={handleRecommendationPress}
+      />
+
+      {/* Upcoming Trips */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Your Upcoming Trips</Text>
+        {state.trips.filter(trip => trip.status === 'upcoming').length > 0 ? (
+          state.trips
+            .filter(trip => trip.status === 'upcoming')
+            .map(trip => (
+              <TripCard
+                key={trip.id}
+                destination={trip.destination}
+                airline={trip.airline}
+                hotel={trip.hotel}
+                price={trip.price}
+                duration={trip.duration}
+                image={trip.image}
+                onPress={() => handleTripPress(trip)}
+              />
+            ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No upcoming trips</Text>
+            <Text style={styles.emptyStateSubtext}>Start planning your next adventure!</Text>
+          </View>
+        )}
+      </View>
+
+      <ReclaimModal
+        visible={showReclaimModal}
+        onClose={() => setShowReclaimModal(false)}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#F7FAFC',
+  },
+  header: {
     padding: 20,
+    paddingTop: 60,
   },
-  title: {
-    fontSize: 20,
+  greeting: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  status: {
-    marginVertical: 10,
-  },
-  url: {
-    marginVertical: 10,
+    color: '#2D3748',
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 20,
+    color: '#718096',
   },
-  proofContainer: {
-    marginTop: 20,
+  reclaimButton: {
+    backgroundColor: '#4299E1',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  reclaimButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2D3748',
+    marginBottom: 12,
+    paddingHorizontal: 20,
+  },
+  planButton: {
+    backgroundColor: '#38A169',
+    marginHorizontal: 20,
+    marginTop: 12,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  planButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4A5568',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#718096',
+    textAlign: 'center',
   },
 });

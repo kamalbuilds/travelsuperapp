@@ -1,50 +1,190 @@
-# Welcome to your Expo app 👋
+# WanderMate - Personalized Travel Planner
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+WanderMate is a comprehensive React Native travel planning application that collects user journey history and preferences to recommend and manage future trips. The app includes Reclaim Protocol integration for secure verification.
 
-## Get started
+## Features
 
-1. Install dependencies
+### 🏠 Home Screen
+- Personalized trip recommendations based on user preferences
+- Quick access to Reclaim verification
+- Explore more destinations with rating system
+- View upcoming trips
 
-   ```bash
-   npm install
-   ```
+### 📋 Onboarding & Preferences
+- User registration with name and email
+- Comprehensive preference collection:
+  - Preferred airlines
+  - Hotel types (budget/luxury/boutique)
+  - Food choices (veg/non-veg, local/continental)
+  - Destination types (beach/mountains/culture)
+  - Activities (sightseeing/adventure/relaxation)
 
-2. Start the app
+### 🎯 Trip Planning
+- AI-powered trip suggestions
+- Customizable hotel, flight, food, and activity options
+- Real-time pricing
+- Trip summary and confirmation
 
-   ```bash
-   npx expo start
-   ```
+### 💳 Payment Integration
+- UPI payment support
+- Crypto wallet integration (Metamask/WalletConnect)
+- Secure payment processing
 
-In the output, you'll find options to open the app in a
+### ✈️ My Trips
+- View upcoming and completed trips
+- Rate completed trips
+- Share travel experiences
+- Trip status tracking
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### 👤 Profile Management
+- Edit travel preferences
+- Manage payment methods
+- App settings (notifications, dark mode)
+- Account management
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 🔐 Reclaim Protocol Integration
+- Secure identity verification
+- Proof generation and validation
+- Modal-based integration accessible from home screen
 
-## Get a fresh project
+## Tech Stack
 
-When you're ready, run:
+- **Framework**: React Native with Expo
+- **Navigation**: Expo Router
+- **State Management**: React Context API
+- **Styling**: React Native StyleSheet
+- **UI Components**: Custom components with modern design
+- **Verification**: Reclaim Protocol SDK
+- **Payments**: Mock UPI and Crypto integration
 
-```bash
-npm run reset-project
+## Project Structure
+
+```
+├── app/
+│   ├── (tabs)/
+│   │   ├── index.tsx          # Home screen
+│   │   ├── my-trips.tsx       # My trips screen
+│   │   ├── profile.tsx        # Profile screen
+│   │   └── _layout.tsx        # Tab navigation
+│   ├── onboarding.tsx         # Onboarding flow
+│   ├── plan-trip.tsx          # Trip planning screen
+│   └── _layout.tsx            # Root layout
+├── components/
+│   ├── TripCard.tsx           # Trip display component
+│   ├── PreferenceForm.tsx     # User preferences form
+│   ├── PaymentModal.tsx       # Payment interface
+│   ├── RecommendationCarousel.tsx # Trip recommendations
+│   └── reclaim/
+│       └── ReclaimModal.tsx   # Reclaim integration
+├── contexts/
+│   └── AppContext.tsx         # Global state management
+└── constants/                 # App constants and colors
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting Started
 
-## Learn more
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI
+- iOS Simulator or Android Emulator
 
-To learn more about developing your project with Expo, look at the following resources:
+### Installation
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd travelsuperapp
+```
 
-## Join the community
+2. Install dependencies:
+```bash
+npm install
+```
 
-Join our community of developers creating universal apps.
+3. Start the development server:
+```bash
+npx expo start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+4. Run on your preferred platform:
+```bash
+# iOS
+npx expo run:ios
+
+# Android
+npx expo run:android
+
+# Web
+npx expo start --web
+```
+
+## Key Components
+
+### TripCard
+Reusable component for displaying trip information with:
+- Destination image and details
+- Airline and hotel information
+- Pricing and duration
+- Recommended badge support
+
+### PreferenceForm
+Multi-step form for collecting user preferences with:
+- Interactive selection interface
+- Category-based organization
+- Real-time updates
+
+### PaymentModal
+Secure payment interface supporting:
+- UPI payment processing
+- Crypto wallet integration
+- Payment confirmation
+
+### ReclaimModal
+Integration with Reclaim Protocol for:
+- Identity verification
+- Proof generation
+- Secure data validation
+
+## State Management
+
+The app uses React Context API for global state management:
+
+- **User Preferences**: Travel preferences and settings
+- **Trip Data**: Upcoming and completed trips
+- **Authentication**: User login status and information
+- **Onboarding**: App setup completion status
+
+## Styling
+
+The app features a modern, clean design with:
+- Warm color scheme (#F7FAFC background, #2D3748 text)
+- Rounded corners and soft shadows
+- Consistent spacing and typography
+- Responsive layout design
+
+## Future Enhancements
+
+- Real API integration for trip data
+- Advanced AI recommendations
+- Social features and trip sharing
+- Offline support
+- Push notifications
+- Advanced payment processing
+- Multi-language support
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Support
+
+For support and questions, please open an issue in the repository.
