@@ -1,157 +1,399 @@
-import type { Proof } from '@reclaimprotocol/reactnative-sdk';
-import { ReclaimProofRequest } from '@reclaimprotocol/reactnative-sdk';
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { Button, Linking, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Mic,
+  MicOff,
+  Plane,
+  Hotel,
+  MapPin,
+  Calendar,
+  Sun,
+  Navigation,
+  Bell,
+  CreditCard,
+} from 'lucide-react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+} from 'react-native-reanimated';
 
-const APP_ID = '';
-const APP_SECRET = '';
-const PROVIDER_ID = '';
-const APP_SCHEME = 'exp://192.168.0.112:8081';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
-export default function App() {
-  const [status, setStatus] = useState<string>('');
-  const [extracted, setExtracted] = useState<string | null>(null);
-  const [proofObject, setProofObject] = useState<string | null>(null);
-  const [reclaimProofRequest, setReclaimProofRequest] = useState<ReclaimProofRequest | null>(null);
-  const [requestUrl, setRequestUrl] = useState<string | null>(null);
+const { width } = Dimensions.get('window');
+
+export default function HomeScreen() {
+  const colorScheme = useColorScheme();
+  const [isListening, setIsListening] = useState(false);
+  const [currentTrip, setCurrentTrip] = useState({
+    destination: 'Tokyo, Japan',
+    daysLeft: 12,
+    weather: '22°C Sunny',
+  });
+
+  // Voice button animation
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
 
   useEffect(() => {
-    initializeReclaimProofRequest();
-    setupDeepLinking();
-  }, []);
-
-  function setupDeepLinking() {
-    Linking.addEventListener('url', handleDeepLink);
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink({url});
-      }
-    });
-
-    return () => {
-      Linking.removeAllListeners('url');
-    };
-  }
-
-  function handleDeepLink(event: {url: string}) {
-    console.log('Deep link received:', event.url);
-    // You can add logic here to handle the deep link
-  }
-
-  async function initializeReclaimProofRequest() {
-    try {
-      const proofRequest = await ReclaimProofRequest.init(
-        "APP_ID",
-        "APP_SECRET",
-        "PROVIDER_ID",
+    if (isListening) {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.1, { duration: 800 }),
+          withTiming(1, { duration: 800 })
+        ),
+        -1,
+        true
       );
-      setReclaimProofRequest(proofRequest);
-
-      proofRequest.addContext('0x00000000000', 'Example context message');
-      proofRequest.setRedirectUrl(`${APP_SCHEME}proof`);
-
-      console.log('Proof request initialized:', proofRequest.toJsonString());
-    } catch (error) {
-      console.error('Error initializing ReclaimProofRequest:', error);
+      opacity.value = withRepeat(
+        withSequence(
+          withTiming(0.7, { duration: 800 }),
+          withTiming(1, { duration: 800 })
+        ),
+        -1,
+        true
+      );
+    } else {
+      scale.value = withTiming(1);
+      opacity.value = withTiming(1);
     }
-  }
+  }, [isListening]);
 
-  async function startReclaimSession() {
-    if (!reclaimProofRequest) {
-      console.error('ReclaimProofRequest not initialized');
-      return;
+  const handleVoicePress = () => {
+    setIsListening(!isListening);
+    if (!isListening) {
+      Alert.alert(
+        'Voice Assistant',
+        'Hi! I\'m your AI travel assistant. How can I help you plan your next adventure?',
+        [
+          { text: 'Plan a Trip', onPress: () => router.push('/trip-planning') },
+          { text: 'Book Flight', onPress: () => router.push('/booking') },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
     }
+  };
 
-    try {
-      setStatus('Starting Reclaim session...');
-
-      const url = await reclaimProofRequest.getRequestUrl();
-      setRequestUrl(url);
-      
-      const canOpen = await Linking.canOpenURL(url);
-      if (canOpen) {
-        await Linking.openURL(url);
-        setStatus('Session started. Waiting for proof...');
-      } else {
-        setStatus('Unable to open URL automatically. Please copy and open the URL manually.');
-      }
-
-      const statusUrl = reclaimProofRequest.getStatusUrl();
-      console.log('Status URL:', statusUrl);
-
-      await reclaimProofRequest.startSession({
-        onSuccess: async (proof: Proof | Proof[] | string | undefined) => {
-          if (proof){
-            if (typeof proof === 'string') {
-              console.log('SDK Message:', proof)
-              setExtracted(proof)
-            } else if (typeof proof !== 'string') {  
-              console.log('Proof received:', proof);
-              if (Array.isArray(proof)) {
-                setExtracted(JSON.stringify(proof.map(p => p.claimData.context)))
-              } else {
-                setExtracted(JSON.stringify(proof.claimData.context));
-              }
-            }
-            setStatus('Proof received!');
-            setProofObject(JSON.stringify(proof, null, 2));
-          }
-
-        },
-        onError: (error: Error) => {
-          console.error('Error in proof generation:', error);
-          setStatus(`Error in proof generation: ${error.message}`);
-        },
-      });
-    } catch (error) {
-      console.error('Error starting Reclaim session:', error);
-      setStatus(`Error starting Reclaim session`);
-    }
-  }
+  const quickActions = [
+    {
+      title: 'Plan Trip',
+      icon: MapPin,
+      color: '#667eea',
+      onPress: () => router.push('/trip-planning'),
+    },
+    {
+      title: 'Find Flights',
+      icon: Plane,
+      color: '#f093fb',
+      onPress: () => router.push('/booking'),
+    },
+    {
+      title: 'Book Hotels',
+      icon: Hotel,
+      color: '#4facfe',
+      onPress: () => router.push('/booking'),
+    },
+    {
+      title: 'Travel Wallet',
+      icon: CreditCard,
+      color: '#43e97b',
+      onPress: () => router.push('/wallet'),
+    },
+  ];
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>React Native Reclaim Demo</Text>
-      <Button onPress={startReclaimSession} title="Start Reclaim Session" />
-      <Text style={styles.status}>{status}</Text>
-      {requestUrl && (
-        <Text style={styles.url}>Request URL: {requestUrl}</Text>
-      )}
-      {proofObject && (
-        <View style={styles.proofContainer}>
-          <Text style={styles.subtitle}>Proof Data:</Text>
-          <Text>{proofObject}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.greeting, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Good morning!
+            </Text>
+            <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Ready for your next adventure?
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.notificationButton}>
+            <Bell size={24} color={Colors[colorScheme ?? 'light'].text} />
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
+
+        {/* Voice Assistant Button */}
+        <View style={styles.voiceSection}>
+          <Animated.View style={animatedStyle}>
+            <TouchableOpacity
+              style={[
+                styles.voiceButton,
+                isListening && styles.voiceButtonActive,
+              ]}
+              onPress={handleVoicePress}
+            >
+              {isListening ? (
+                <MicOff size={32} color="#fff" />
+              ) : (
+                <Mic size={32} color="#fff" />
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+          <Text style={[styles.voiceText, { color: Colors[colorScheme ?? 'light'].text }]}>
+            {isListening ? 'Listening...' : 'Tap to speak with AI'}
+          </Text>
+        </View>
+
+        {/* Current Trip Card */}
+        <View style={styles.currentTripCard}>
+          <Image
+            source={{ uri: 'https://images.pexels.com/photos/2506923/pexels-photo-2506923.jpeg?auto=compress&cs=tinysrgb&w=800' }}
+            style={styles.tripImage}
+          />
+          <View style={styles.tripOverlay}>
+            <Text style={styles.tripTitle}>Next Trip</Text>
+            <Text style={styles.tripDestination}>{currentTrip.destination}</Text>
+            <View style={styles.tripDetails}>
+              <View style={styles.tripDetailItem}>
+                <Calendar size={16} color="#fff" />
+                <Text style={styles.tripDetailText}>{currentTrip.daysLeft} days left</Text>
+              </View>
+              <View style={styles.tripDetailItem}>
+                <Sun size={16} color="#fff" />
+                <Text style={styles.tripDetailText}>{currentTrip.weather}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActionsSection}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Quick Actions
+          </Text>
+          <View style={styles.quickActionsGrid}>
+            {quickActions.map((action, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.quickActionCard, { backgroundColor: action.color }]}
+                onPress={action.onPress}
+              >
+                <action.icon size={28} color="#fff" />
+                <Text style={styles.quickActionText}>{action.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Recent Activity */}
+        <View style={styles.recentSection}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Recent Activity
+          </Text>
+          <View style={[styles.activityCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: '#667eea' }]}>
+                <Plane size={20} color="#fff" />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={[styles.activityTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Flight to Tokyo booked
+                </Text>
+                <Text style={[styles.activityTime, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+                  2 hours ago
+                </Text>
+              </View>
+            </View>
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: '#f093fb' }]}>
+                <Hotel size={20} color="#fff" />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={[styles.activityTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Hotel reservation confirmed
+                </Text>
+                <Text style={[styles.activityTime, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+                  1 day ago
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
-  title: {
-    fontSize: 20,
+  greeting: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  status: {
-    marginVertical: 10,
-  },
-  url: {
-    marginVertical: 10,
   },
   subtitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 20,
+    opacity: 0.7,
+    marginTop: 4,
   },
-  proofContainer: {
-    marginTop: 20,
+  notificationButton: {
+    padding: 8,
+  },
+  voiceSection: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  voiceButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#667eea',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  voiceButtonActive: {
+    backgroundColor: '#f093fb',
+  },
+  voiceText: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  currentTripCard: {
+    marginHorizontal: 20,
+    marginVertical: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 200,
+  },
+  tripImage: {
+    width: '100%',
+    height: '100%',
+  },
+  tripOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 20,
+  },
+  tripTitle: {
+    color: '#fff',
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  tripDestination: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 4,
+  },
+  tripDetails: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 16,
+  },
+  tripDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tripDetailText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  quickActionsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  quickActionCard: {
+    width: (width - 56) / 2,
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickActionText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  recentSection: {
+    paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  activityCard: {
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  activityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  activityTime: {
+    fontSize: 14,
+    marginTop: 2,
   },
 });
