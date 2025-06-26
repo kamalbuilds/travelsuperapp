@@ -1,19 +1,39 @@
 {
   "expo": {
-    "name": "Your App Name",
-    "slug": "your-app-slug",
+    "name": "TravelVoice AI",
+    "slug": "travelsuperapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "travelsuperapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.travelsuperapp"
+      "bundleIdentifier": "com.travelsuperapp.voice",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app uses the microphone for AI voice conversations to help you plan and manage your travels.",
+        "NSCameraUsageDescription": "This app uses the camera to capture travel photos and for video calls with AI travel assistants.",
+        "NSLocationWhenInUseUsageDescription": "This app uses location to provide personalized travel recommendations and nearby services.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to provide travel updates and location-based services."
+      }
     },
     "android": {
-      "package": "com.anonymous.travelsuperapp",
+      "package": "com.travelsuperapp.voice",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -28,8 +48,25 @@
     "plugins": [
       "expo-router",
       "expo-splash-screen",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-dev-client",
+        {
+          "addGeneratedScheme": false
+        }
+      ]
     ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    },
     "assetBundlePatterns": [
       "**/*"
     ]
