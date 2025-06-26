@@ -9,8 +9,14 @@
     "ios": "bunx expo start --ios",
     "web": "bunx expo start --web",
     "lint": "bunx expo lint",
-    "install": "bun install",
-    "clean": "rm -rf node_modules && rm -rf .expo && bun install"
+    "clean": "rm -rf node_modules && rm -rf .expo && bun install",
+    "travel-agents": "bun run agents/cli/AgentManagerCLI.ts",
+    "create-agents": "bun run travel-agents create-all",
+    "list-agents": "bun run travel-agents list",
+    "test-agents": "bun run travel-agents test"
+  },
+  "bin": {
+    "travel-agents": "./agents/cli/AgentManagerCLI.ts"
   },
   "dependencies": {
     "@11labs/react": "^0.0.7",
@@ -40,7 +46,6 @@
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.9",
     "expo-web-browser": "~14.2.0",
-    "install": "^0.13.0",
     "lucide-react-native": "^0.344.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -54,7 +59,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.8.0",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "commander": "^12.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

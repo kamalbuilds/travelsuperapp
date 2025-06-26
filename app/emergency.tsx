@@ -1,28 +1,29 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Linking,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  ArrowLeft,
-  Phone,
-  MapPin,
-  Shield,
-  Heart,
   AlertTriangle,
-  Video,
+  ArrowLeft,
+  Heart,
+  MapPin,
   MessageCircle,
   Navigation,
-  Clock,
+  Phone,
+  Shield,
+  Video
 } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { type Message } from '@/components/ChatMessage';
+import TravelVoiceAI from '@/components/TravelVoiceAI';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -75,6 +76,17 @@ const embassyContacts = [
 export default function EmergencyScreen() {
   const colorScheme = useColorScheme();
   const [currentLocation, setCurrentLocation] = useState('Tokyo, Japan');
+  const [emergencyMessages, setEmergencyMessages] = useState<Message[]>([]);
+
+  const handleEmergencyMessage = (message: Message) => {
+    setEmergencyMessages(prev => [...prev, message]);
+    
+    // Auto-trigger emergency actions based on AI responses
+    if (message.source === 'ai' && message.message.includes('🚨')) {
+      // Flash screen or other emergency indicators
+      console.log('Emergency situation detected by AI');
+    }
+  };
 
   const handleCall = (number: string) => {
     Alert.alert(
@@ -133,6 +145,29 @@ export default function EmergencyScreen() {
             <Text style={styles.alertDescription}>
               Get immediate help with our AI assistant or emergency contacts
             </Text>
+          </View>
+        </View>
+
+        {/* AI Emergency Assistant */}
+        <View style={styles.aiAssistantContainer}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            AI Emergency Assistant
+          </Text>
+          <View style={styles.aiAssistantCard}>
+            <TravelVoiceAI
+              onMessage={handleEmergencyMessage}
+              size="large"
+              variant="emergency"
+              agentId="YOUR_EMERGENCY_AGENT_ID" // Replace with emergency-specific agent
+            />
+            <Text style={[styles.aiAssistantText, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Tap to speak for immediate emergency assistance
+            </Text>
+            {emergencyMessages.length > 0 && (
+              <Text style={[styles.aiMessageCount, { color: '#EF4444' }]}>
+                {emergencyMessages.length} emergency interaction{emergencyMessages.length > 1 ? 's' : ''}
+              </Text>
+            )}
           </View>
         </View>
 

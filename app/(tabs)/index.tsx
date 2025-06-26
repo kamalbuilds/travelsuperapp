@@ -1,36 +1,27 @@
 import { router } from 'expo-router';
-import { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  Image,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Mic,
-  MicOff,
-  Plane,
+  Bell,
+  Calendar,
+  CreditCard,
   Hotel,
   MapPin,
-  Calendar,
-  Sun,
-  Navigation,
-  Bell,
-  CreditCard,
+  Plane,
+  Sun
 } from 'lucide-react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
-} from 'react-native-reanimated';
+import { useState } from 'react';
+import {
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import TravelAgentManager, { AgentSession } from '@/agents/TravelAgentManager';
+import { type Message } from '@/components/ChatMessage';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -38,58 +29,28 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
-  const [isListening, setIsListening] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [agentManager] = useState(() => new TravelAgentManager(process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || ''));
+  const [currentSession, setCurrentSession] = useState<AgentSession | null>(null);
   const [currentTrip, setCurrentTrip] = useState({
     destination: 'Tokyo, Japan',
     daysLeft: 12,
     weather: '22°C Sunny',
   });
 
-  // Voice button animation
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  useEffect(() => {
-    if (isListening) {
-      scale.value = withRepeat(
-        withSequence(
-          withTiming(1.1, { duration: 800 }),
-          withTiming(1, { duration: 800 })
-        ),
-        -1,
-        true
-      );
-      opacity.value = withRepeat(
-        withSequence(
-          withTiming(0.7, { duration: 800 }),
-          withTiming(1, { duration: 800 })
-        ),
-        -1,
-        true
-      );
-    } else {
-      scale.value = withTiming(1);
-      opacity.value = withTiming(1);
-    }
-  }, [isListening]);
-
-  const handleVoicePress = () => {
-    setIsListening(!isListening);
-    if (!isListening) {
-      Alert.alert(
-        'Voice Assistant',
-        'Hi! I\'m your AI travel assistant. How can I help you plan your next adventure?',
-        [
-          { text: 'Plan a Trip', onPress: () => router.push('/trip-planning') },
-          { text: 'Book Flight', onPress: () => router.push('/booking') },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
+  const handleAIMessage = (message: Message) => {
+    setMessages(prev => [...prev, message]);
+    
+    // Handle AI-suggested actions
+    if (message.source === 'ai' && message.message.includes('Navigate to')) {
+      // Extract navigation intent and route accordingly
+      if (message.message.includes('trip-planning')) {
+        setTimeout(() => router.push('/trip-planning'), 1000);
+      } else if (message.message.includes('booking')) {
+        setTimeout(() => router.push('/booking'), 1000);
+      } else if (message.message.includes('emergency')) {
+        setTimeout(() => router.push('/emergency'), 1000);
+      }
     }
   };
 
@@ -140,24 +101,26 @@ export default function HomeScreen() {
 
         {/* Voice Assistant Button */}
         <View style={styles.voiceSection}>
-          <Animated.View style={animatedStyle}>
-            <TouchableOpacity
-              style={[
-                styles.voiceButton,
-                isListening && styles.voiceButtonActive,
-              ]}
-              onPress={handleVoicePress}
-            >
-              {isListening ? (
-                <MicOff size={32} color="#fff" />
-              ) : (
-                <Mic size={32} color="#fff" />
-              )}
-            </TouchableOpacity>
-          </Animated.View>
+          <MultiAgentTravelAI
+            agentManager={agentManager}
+            userId="user_123" // Replace with actual user ID
+            size="large"
+            theme="primary"
+            onAgentTransfer={(fromAgent, toAgent) => {
+              console.log(`Transferred from ${fromAgent} to ${toAgent}`);
+            }}
+            onSessionUpdate={(session) => {
+              setCurrentSession(session);
+            }}
+          />
           <Text style={[styles.voiceText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            {isListening ? 'Listening...' : 'Tap to speak with AI'}
+            Tap to speak with your AI travel assistant
           </Text>
+          {currentSession && (
+            <Text style={[styles.messageCount, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+              {currentSession.conversationHistory.length} messages in current session
+            </Text>
+          )}
         </View>
 
         {/* Current Trip Card */}
@@ -288,6 +251,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     fontWeight: '500',
+  },
+  messageCount: {
+    marginTop: 8,
+    fontSize: 14,
+    opacity: 0.7,
   },
   currentTripCard: {
     marginHorizontal: 20,

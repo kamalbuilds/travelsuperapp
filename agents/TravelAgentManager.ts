@@ -1,4 +1,5 @@
-import { AGENT_IDS, ElevenLabsAgentConfig, TRAVEL_AGENTS_CONFIG } from './config/AgentConfigurations';
+import type { ElevenLabsAgentConfig } from './config/AgentConfigurations';
+import { TRAVEL_AGENTS_CONFIG } from './config/AgentConfigurations';
 
 export interface AgentTransferContext {
   fromAgent: string;
@@ -38,6 +39,10 @@ export interface AgentSession {
   transferHistory: AgentTransferContext[];
 }
 
+/**
+ * Travel Agent Manager - Coordinates multiple specialized AI agents
+ * Note: Agents must be created through ElevenLabs dashboard, not programmatically
+ */
 export class TravelAgentManager {
   private sessions: Map<string, AgentSession> = new Map();
   private agentConfigs: Record<string, ElevenLabsAgentConfig>;
@@ -47,50 +52,19 @@ export class TravelAgentManager {
   constructor(apiKey: string) {
     this.apiKey = apiKey;
     this.agentConfigs = TRAVEL_AGENTS_CONFIG;
-    this.agentIds = AGENT_IDS;
+    this.agentIds = {}; // Will be populated when agents are created through dashboard
   }
 
   /**
-   * Create all travel agents in ElevenLabs using the API
+   * Note: ElevenLabs agents must be created through their dashboard
+   * This method provides guidance for manual creation
    */
   async createAllAgents(): Promise<Record<string, string>> {
-    const createdAgents: Record<string, string> = {};
+    console.log('📋 ElevenLabs agents must be created through their dashboard.');
+    console.log('   Please follow the setup instructions provided by the CLI.');
+    console.log('   After creation, update the agent IDs in your configuration.');
     
-    for (const [agentKey, config] of Object.entries(this.agentConfigs)) {
-      try {
-        console.log(`Creating ${config.name}...`);
-        const agentId = await this.createAgent(config);
-        createdAgents[agentKey] = agentId;
-        console.log(`✅ Created ${config.name} with ID: ${agentId}`);
-      } catch (error) {
-        console.error(`❌ Failed to create ${config.name}:`, error);
-        throw error;
-      }
-    }
-    
-    return createdAgents;
-  }
-
-  /**
-   * Create a single agent using ElevenLabs API
-   */
-  private async createAgent(config: ElevenLabsAgentConfig): Promise<string> {
-    const response = await fetch('https://api.elevenlabs.io/v1/convai/agents', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'xi-api-key': this.apiKey
-      },
-      body: JSON.stringify(config)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`ElevenLabs API Error: ${response.status} - ${JSON.stringify(errorData)}`);
-    }
-
-    const data = await response.json();
-    return data.agent_id;
+    return {}; // Agents must be created manually
   }
 
   /**
@@ -272,9 +246,9 @@ export class TravelAgentManager {
     // Extract topics from context
     const topicsCovered = [];
     if (session.context.destination) topicsCovered.push(`Destination: ${session.context.destination}`);
-    if (session.context.travelDates) topicsCovered.push('Travel Dates');
-    if (session.context.budget) topicsCovered.push('Budget Planning');
-    if (session.context.preferences?.length) topicsCovered.push('Preferences');
+    if (session.context.travelDates) topicsCovered.push('Travel dates discussed');
+    if (session.context.budget) topicsCovered.push('Budget considerations');
+    if (session.context.preferences) topicsCovered.push('User preferences captured');
 
     return {
       totalMessages: session.conversationHistory.length,
@@ -286,54 +260,55 @@ export class TravelAgentManager {
   }
 
   /**
-   * Clean up old sessions (call periodically)
+   * Clean up old sessions (run periodically)
    */
   cleanupOldSessions(maxAgeHours: number = 24): number {
-    const cutoffTime = Date.now() - (maxAgeHours * 60 * 60 * 1000);
-    let cleanedCount = 0;
+    const cutoffTime = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
+    let cleaned = 0;
 
     for (const [sessionId, session] of this.sessions.entries()) {
-      const lastActivity = session.conversationHistory[session.conversationHistory.length - 1]?.timestamp?.getTime() || 0;
-      
-      if (lastActivity < cutoffTime) {
+      const lastActivity = session.conversationHistory[session.conversationHistory.length - 1]?.timestamp;
+      if (lastActivity && lastActivity < cutoffTime) {
         this.sessions.delete(sessionId);
-        cleanedCount++;
+        cleaned++;
       }
     }
 
-    return cleanedCount;
+    return cleaned;
   }
 
   /**
-   * Export agent configurations for CLI tool usage
+   * Export agent configurations for manual setup
    */
   exportAgentConfigs(): Record<string, any> {
     const configs: Record<string, any> = {};
     
-    for (const [key, config] of Object.entries(this.agentConfigs)) {
+    Object.entries(this.agentConfigs).forEach(([key, config]) => {
       configs[key] = {
         name: config.name,
-        config_file: `agent_configs/prod/${key.replace(/_/g, '-')}.json`,
-        conversation_config: config.conversation_config,
-        platform_settings: config.platform_settings,
-        privacy_settings: config.privacy_settings,
-        analysis_config: config.analysis_config,
-        tools: config.tools
+        agent: {
+          prompt: config.conversation_config.agent.prompt,
+          first_message: config.conversation_config.agent.first_message,
+          language: config.conversation_config.agent.language
+        },
+        tts: config.conversation_config.tts,
+        llm: config.conversation_config.agent.prompt.llm,
+        tools: config.tools?.map((tool: any) => ({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters
+        })) || []
       };
-    }
-    
+    });
+
     return configs;
   }
 
   /**
-   * Update agent IDs after creation
+   * Update agent IDs after manual creation
    */
   updateAgentIds(newAgentIds: Record<string, string>): void {
-    for (const [key, id] of Object.entries(newAgentIds)) {
-      if (this.agentIds[key]) {
-        this.agentIds[key] = id;
-      }
-    }
+    this.agentIds = { ...this.agentIds, ...newAgentIds };
   }
 
   /**
@@ -349,22 +324,20 @@ export class TravelAgentManager {
   validateConfigurations(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    for (const [key, config] of Object.entries(this.agentConfigs)) {
-      // Check required fields
-      if (!config.name) errors.push(`${key}: Missing name`);
-      if (!config.conversation_config?.agent?.prompt?.prompt) errors.push(`${key}: Missing prompt`);
-      if (!config.conversation_config?.agent?.first_message) errors.push(`${key}: Missing first_message`);
-      if (!config.conversation_config?.tts?.voice_id) errors.push(`${key}: Missing voice_id`);
-      
-      // Validate tools
-      if (config.tools) {
-        for (const tool of config.tools) {
-          if (!tool.name || !tool.description) {
-            errors.push(`${key}: Tool missing name or description`);
-          }
-        }
+    Object.entries(this.agentConfigs).forEach(([key, config]) => {
+      if (!config.name) {
+        errors.push(`${key}: Missing name`);
       }
-    }
+      if (!config.conversation_config?.agent?.prompt?.prompt) {
+        errors.push(`${key}: Missing system prompt`);
+      }
+      if (!config.conversation_config?.agent?.first_message) {
+        errors.push(`${key}: Missing first message`);
+      }
+      if (!config.conversation_config?.tts?.voice_id) {
+        errors.push(`${key}: Missing voice ID`);
+      }
+    });
 
     return {
       valid: errors.length === 0,
