@@ -10,20 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  User,
-  Settings,
-  Bell,
-  Shield,
-  CreditCard,
-  Globe,
-  Mic,
-  Video,
-  Crown,
-  LogOut,
-  ChevronRight,
-  Edit,
-} from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CreditCard, Globe, Mic, Video, Crown, LogOut, ChevronRight, CreditCard as Edit } from 'lucide-react-native';
 
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
