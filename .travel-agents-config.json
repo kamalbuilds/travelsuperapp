@@ -1,0 +1,12 @@
+{
+  "agentIds": {
+    "orchestrator": "your_orchestrator_agent_id_here",
+    "flight_booking": "your_flight_booking_agent_id_here",
+    "hotel_booking": "your_hotel_booking_agent_id_here",
+    "local_experience": "your_local_experience_agent_id_here",
+    "emergency_assistance": "your_emergency_assistance_agent_id_here",
+    "weather_safety": "your_weather_safety_agent_id_here"
+  },
+  "created": "2025-06-26T12:19:16.403Z",
+  "instructions": "Replace agent IDs with actual IDs from ElevenLabs dashboard"
+}
