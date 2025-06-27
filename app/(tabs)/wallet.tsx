@@ -1,477 +1,577 @@
-import { useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  CreditCard,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Plus,
-  Eye,
-  EyeOff,
-  TrendingUp,
-  Wallet as WalletIcon,
-  Shield,
-  Zap,
-} from 'lucide-react-native';
 
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { getCurrentPlatformConfig } from '@/constants/PaymentConfig';
+import { paymentManager, UserEntitlements } from '@/utils/HybridPaymentManager';
 
-const { width } = Dimensions.get('window');
-
-const currencies = [
-  { code: 'USD', name: 'US Dollar', balance: 2450.75, change: '+2.5%' },
-  { code: 'EUR', name: 'Euro', balance: 1850.30, change: '+1.8%' },
-  { code: 'JPY', name: 'Japanese Yen', balance: 125000, change: '-0.5%' },
-  { code: 'ALGO', name: 'Algorand', balance: 500.25, change: '+15.2%' },
-];
-
-const transactions = [
-  {
-    id: 1,
-    type: 'expense',
-    title: 'Hotel Booking - Tokyo',
-    amount: -450.00,
-    currency: 'USD',
-    date: '2 hours ago',
-    category: 'accommodation',
-  },
-  {
-    id: 2,
-    type: 'income',
-    title: 'Cashback Reward',
-    amount: +25.50,
-    currency: 'USD',
-    date: '1 day ago',
-    category: 'reward',
-  },
-  {
-    id: 3,
-    type: 'expense',
-    title: 'Flight to Paris',
-    amount: -680.00,
-    currency: 'USD',
-    date: '3 days ago',
-    category: 'transport',
-  },
-  {
-    id: 4,
-    type: 'exchange',
-    title: 'USD to EUR Exchange',
-    amount: -200.00,
-    currency: 'USD',
-    date: '1 week ago',
-    category: 'exchange',
-  },
-];
+interface WalletData {
+  avaxBalance: string;
+  usdValue: string;
+  walletAddress?: string;
+  isConnected: boolean;
+}
 
 export default function WalletScreen() {
-  const colorScheme = useColorScheme();
-  const [balanceVisible, setBalanceVisible] = useState(true);
-  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [walletData, setWalletData] = useState<WalletData>({
+    avaxBalance: '0.00',
+    usdValue: '0.00',
+    isConnected: false
+  });
+  const [userEntitlements, setUserEntitlements] = useState<UserEntitlements | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [avaxPrice, setAvaxPrice] = useState(20); // Mock price for demo
 
-  const totalBalance = currencies.find(c => c.code === selectedCurrency)?.balance || 0;
+  useEffect(() => {
+    loadWalletData();
+    loadUserEntitlements();
+    
+    // Set up payment event listeners
+    paymentManager.onEntitlementsUpdated((entitlements) => {
+      setUserEntitlements(entitlements);
+    });
+  }, []);
+
+  const loadWalletData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // For demo purposes, we'll simulate wallet data
+      // In a real app, you would connect to a wallet or use stored wallet info
+      const mockWalletData: WalletData = {
+        avaxBalance: (Math.random() * 10).toFixed(2),
+        usdValue: (Math.random() * 200).toFixed(2),
+        walletAddress: '0x742d35A6b85123...cd45B9C1f4A2e',
+        isConnected: false // Set to false for demo
+      };
+      
+      setWalletData(mockWalletData);
+    } catch (error) {
+      console.error('Failed to load wallet data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadUserEntitlements = async () => {
+    try {
+      const entitlements = await paymentManager.checkSubscriptionStatus();
+      setUserEntitlements(entitlements);
+    } catch (error) {
+      console.error('Failed to load user entitlements:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      loadWalletData(),
+      loadUserEntitlements()
+    ]);
+    setIsRefreshing(false);
+  };
+
+  const handleConnectWallet = () => {
+    Alert.alert(
+      'Connect Wallet',
+      'Choose your preferred wallet to connect',
+      [
+        {
+          text: 'MetaMask',
+          onPress: () => simulateWalletConnection('MetaMask')
+        },
+        {
+          text: 'WalletConnect',
+          onPress: () => simulateWalletConnection('WalletConnect')
+        },
+        {
+          text: 'Core Wallet',
+          onPress: () => simulateWalletConnection('Core Wallet')
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  const simulateWalletConnection = (walletType: string) => {
+    // Simulate wallet connection
+    setTimeout(() => {
+      setWalletData(prev => ({
+        ...prev,
+        isConnected: true,
+        walletAddress: '0x742d35A6b85123...cd45B9C1f4A2e',
+        avaxBalance: (Math.random() * 50 + 10).toFixed(2),
+        usdValue: ((Math.random() * 50 + 10) * avaxPrice).toFixed(2)
+      }));
+      Alert.alert('Success', `${walletType} connected successfully!`);
+    }, 1500);
+  };
+
+  const handleDisconnectWallet = () => {
+    Alert.alert(
+      'Disconnect Wallet',
+      'Are you sure you want to disconnect your wallet?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: () => {
+            setWalletData(prev => ({
+              ...prev,
+              isConnected: false,
+              walletAddress: undefined,
+              avaxBalance: '0.00',
+              usdValue: '0.00'
+            }));
+          }
+        }
+      ]
+    );
+  };
+
+  const handleBuyAVAX = () => {
+    Alert.alert(
+      'Buy AVAX',
+      'You can buy AVAX through various exchanges or use our integrated Transak service',
+      [
+        {
+          text: 'Use Transak',
+          onPress: () => {
+            // This would open the Transak widget
+            Alert.alert('Transak', 'Opening Transak widget to buy AVAX...');
+          }
+        },
+        {
+          text: 'External Exchange',
+          onPress: () => {
+            Alert.alert('Info', 'You can buy AVAX on exchanges like Coinbase, Binance, or directly through Avalanche DeFi protocols');
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  const renderWalletStatus = () => {
+    if (!walletData.isConnected) {
+      return (
+        <ThemedView style={styles.walletCard}>
+          <ThemedView style={styles.cardHeader}>
+            <MaterialIcons name="account-balance-wallet" size={32} color="#FF9500" />
+            <ThemedText style={styles.cardTitle}>Connect Your Wallet</ThemedText>
+          </ThemedView>
+          
+          <ThemedText style={styles.cardDescription}>
+            Connect your Avalanche wallet to pay for subscriptions with AVAX
+          </ThemedText>
+          
+          <TouchableOpacity 
+            style={styles.connectButton}
+            onPress={handleConnectWallet}
+          >
+            <MaterialIcons name="link" size={20} color="#fff" />
+            <ThemedText style={styles.connectButtonText}>Connect Wallet</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+      );
+    }
+
+    return (
+      <ThemedView style={styles.walletCard}>
+        <ThemedView style={styles.cardHeader}>
+          <MaterialIcons name="account-balance-wallet" size={32} color="#4CAF50" />
+          <ThemedView style={styles.walletInfo}>
+            <ThemedText style={styles.cardTitle}>Wallet Connected</ThemedText>
+            <ThemedText style={styles.walletAddress}>{walletData.walletAddress}</ThemedText>
+          </ThemedView>
+          <TouchableOpacity onPress={handleDisconnectWallet}>
+            <MaterialIcons name="power-settings-new" size={20} color="#FF5722" />
+          </TouchableOpacity>
+        </ThemedView>
+        
+        <ThemedView style={styles.balanceContainer}>
+          <ThemedView style={styles.balanceItem}>
+            <ThemedText style={styles.balanceLabel}>AVAX Balance</ThemedText>
+            <ThemedText style={styles.balanceValue}>{walletData.avaxBalance} AVAX</ThemedText>
+          </ThemedView>
+          
+          <ThemedView style={styles.balanceItem}>
+            <ThemedText style={styles.balanceLabel}>USD Value</ThemedText>
+            <ThemedText style={styles.balanceValue}>${walletData.usdValue}</ThemedText>
+          </ThemedView>
+        </ThemedView>
+        
+        <ThemedView style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={handleBuyAVAX}
+          >
+            <MaterialIcons name="add" size={20} color="#007AFF" />
+            <ThemedText style={styles.actionButtonText}>Buy AVAX</ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => Alert.alert('Send', 'Send AVAX feature coming soon')}
+          >
+            <MaterialIcons name="send" size={20} color="#007AFF" />
+            <ThemedText style={styles.actionButtonText}>Send</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+      </ThemedView>
+    );
+  };
+
+  const renderSubscriptionPayments = () => {
+    if (!userEntitlements || userEntitlements.paymentMethod !== 'crypto') {
+      return null;
+    }
+
+    return (
+      <ThemedView style={styles.subscriptionCard}>
+        <ThemedView style={styles.cardHeader}>
+          <MaterialIcons name="payment" size={24} color="#4CAF50" />
+          <ThemedText style={styles.cardTitle}>Crypto Subscription</ThemedText>
+        </ThemedView>
+        
+        <ThemedText style={styles.cardDescription}>
+          Your subscription is paid with cryptocurrency
+        </ThemedText>
+        
+        <ThemedView style={styles.subscriptionDetails}>
+          <ThemedView style={styles.detailRow}>
+            <ThemedText style={styles.detailLabel}>Plan:</ThemedText>
+            <ThemedText style={styles.detailValue}>{userEntitlements.tier.toUpperCase()}</ThemedText>
+          </ThemedView>
+          
+          <ThemedView style={styles.detailRow}>
+            <ThemedText style={styles.detailLabel}>Payment Method:</ThemedText>
+            <ThemedText style={styles.detailValue}>AVAX Cryptocurrency</ThemedText>
+          </ThemedView>
+          
+          <ThemedView style={styles.detailRow}>
+            <ThemedText style={styles.detailLabel}>Last Updated:</ThemedText>
+            <ThemedText style={styles.detailValue}>
+              {userEntitlements.lastUpdated.toLocaleDateString()}
+            </ThemedText>
+          </ThemedView>
+        </ThemedView>
+      </ThemedView>
+    );
+  };
+
+  const renderNetworkInfo = () => {
+    const network = getCurrentPlatformConfig().avalanche;
+    
+    return (
+      <ThemedView style={styles.networkCard}>
+        <ThemedView style={styles.cardHeader}>
+          <MaterialIcons name="network-check" size={24} color="#E74C3C" />
+          <ThemedText style={styles.cardTitle}>Avalanche Network</ThemedText>
+        </ThemedView>
+        
+        <ThemedView style={styles.networkDetails}>
+          <ThemedView style={styles.detailRow}>
+            <ThemedText style={styles.detailLabel}>Network:</ThemedText>
+            <ThemedText style={styles.detailValue}>{network.name}</ThemedText>
+          </ThemedView>
+          
+          <ThemedView style={styles.detailRow}>
+            <ThemedText style={styles.detailLabel}>Chain ID:</ThemedText>
+            <ThemedText style={styles.detailValue}>{network.chainId}</ThemedText>
+          </ThemedView>
+          
+          <ThemedView style={styles.detailRow}>
+            <ThemedText style={styles.detailLabel}>Currency:</ThemedText>
+            <ThemedText style={styles.detailValue}>{network.symbol}</ThemedText>
+          </ThemedView>
+        </ThemedView>
+        
+        <TouchableOpacity 
+          style={styles.exploreButton}
+          onPress={() => Alert.alert('Explorer', `Opening ${network.blockExplorerUrl}`)}
+        >
+          <MaterialIcons name="open-in-new" size={16} color="#007AFF" />
+          <ThemedText style={styles.exploreButtonText}>View on Explorer</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <ThemedText style={styles.loadingText}>Loading wallet...</ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Travel Wallet
-          </Text>
-          <TouchableOpacity
-            style={styles.visibilityButton}
-            onPress={() => setBalanceVisible(!balanceVisible)}
-          >
-            {balanceVisible ? (
-              <Eye size={24} color={Colors[colorScheme ?? 'light'].text} />
-            ) : (
-              <EyeOff size={24} color={Colors[colorScheme ?? 'light'].text} />
-            )}
-          </TouchableOpacity>
-        </View>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+        />
+      }
+    >
+      <ThemedView style={styles.header}>
+        <ThemedText style={styles.headerTitle}>Crypto Wallet</ThemedText>
+        <ThemedText style={styles.headerSubtitle}>
+          Manage your AVAX and crypto subscriptions
+        </ThemedText>
+      </ThemedView>
 
-        {/* Main Balance Card */}
-        <View style={styles.balanceCard}>
-          <View style={styles.balanceHeader}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
-            <View style={styles.blockchainBadge}>
-              <Shield size={12} color="#43e97b" />
-              <Text style={styles.blockchainText}>Blockchain Secured</Text>
-            </View>
-          </View>
-          <View style={styles.balanceAmount}>
-            <Text style={styles.balanceValue}>
-              {balanceVisible ? `$${totalBalance.toLocaleString()}` : '••••••'}
-            </Text>
-            <Text style={styles.balanceCurrency}>{selectedCurrency}</Text>
-          </View>
-          <View style={styles.balanceActions}>
-            <TouchableOpacity style={[styles.actionButton, styles.sendButton]}>
-              <ArrowUpRight size={20} color="#fff" />
-              <Text style={styles.actionButtonText}>Send</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.receiveButton]}>
-              <ArrowDownLeft size={20} color="#fff" />
-              <Text style={styles.actionButtonText}>Receive</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.addButton]}>
-              <Plus size={20} color="#fff" />
-              <Text style={styles.actionButtonText}>Add Funds</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+      {renderWalletStatus()}
+      {renderSubscriptionPayments()}
+      {renderNetworkInfo()}
 
-        {/* Currency Selection */}
-        <View style={styles.currencySection}>
-          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Currencies
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.currencyList}>
-              {currencies.map((currency) => (
-                <TouchableOpacity
-                  key={currency.code}
-                  style={[
-                    styles.currencyCard,
-                    selectedCurrency === currency.code && styles.selectedCurrencyCard,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].background }
-                  ]}
-                  onPress={() => setSelectedCurrency(currency.code)}
-                >
-                  <View style={styles.currencyHeader}>
-                    <Text style={[styles.currencyCode, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      {currency.code}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.currencyChange,
-                        { color: currency.change.startsWith('+') ? '#43e97b' : '#ff4757' }
-                      ]}
-                    >
-                      {currency.change}
-                    </Text>
-                  </View>
-                  <Text style={[styles.currencyName, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
-                    {currency.name}
-                  </Text>
-                  <Text style={[styles.currencyBalance, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {balanceVisible ? currency.balance.toLocaleString() : '••••••'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActionsSection}>
-          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Quick Actions
-          </Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: '#667eea' }]}>
-              <TrendingUp size={24} color="#fff" />
-              <Text style={styles.quickActionText}>Exchange</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: '#f093fb' }]}>
-              <WalletIcon size={24} color="#fff" />
-              <Text style={styles.quickActionText}>Pay Bills</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: '#4facfe' }]}>
-              <Zap size={24} color="#fff" />
-              <Text style={styles.quickActionText}>Instant Pay</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: '#43e97b' }]}>
-              <CreditCard size={24} color="#fff" />
-              <Text style={styles.quickActionText}>Cards</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Recent Transactions */}
-        <View style={styles.transactionsSection}>
-          <View style={styles.transactionsHeader}>
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Recent Transactions
-            </Text>
-            <TouchableOpacity>
-              <Text style={[styles.seeAllText, { color: Colors[colorScheme ?? 'light'].tint }]}>
-                See All
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.transactionsList, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-            {transactions.map((transaction) => (
-              <View key={transaction.id} style={styles.transactionItem}>
-                <View style={[
-                  styles.transactionIcon,
-                  {
-                    backgroundColor: transaction.type === 'expense' ? '#ff4757' :
-                      transaction.type === 'income' ? '#43e97b' : '#667eea'
-                  }
-                ]}>
-                  {transaction.type === 'expense' ? (
-                    <ArrowUpRight size={16} color="#fff" />
-                  ) : transaction.type === 'income' ? (
-                    <ArrowDownLeft size={16} color="#fff" />
-                  ) : (
-                    <TrendingUp size={16} color="#fff" />
-                  )}
-                </View>
-                <View style={styles.transactionDetails}>
-                  <Text style={[styles.transactionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {transaction.title}
-                  </Text>
-                  <Text style={[styles.transactionDate, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
-                    {transaction.date}
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    styles.transactionAmount,
-                    {
-                      color: transaction.amount > 0 ? '#43e97b' : Colors[colorScheme ?? 'light'].text
-                    }
-                  ]}
-                >
-                  {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toFixed(2)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <ThemedView style={styles.infoCard}>
+        <ThemedView style={styles.cardHeader}>
+          <MaterialIcons name="info" size={24} color="#2196F3" />
+          <ThemedText style={styles.cardTitle}>About Crypto Payments</ThemedText>
+        </ThemedView>
+        
+        <ThemedText style={styles.infoText}>
+          • Pay for subscriptions with AVAX cryptocurrency{'\n'}
+          • Lower transaction fees on Avalanche network{'\n'}
+          • Decentralized and secure payments{'\n'}
+          • Full transparency on blockchain{'\n'}
+          • No chargebacks or payment disputes
+        </ThemedText>
+      </ThemedView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f9fa'
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa'
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666'
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    padding: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0'
   },
-  title: {
+  headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
-  visibilityButton: {
-    padding: 8,
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center'
   },
-  balanceCard: {
-    marginHorizontal: 20,
-    marginVertical: 20,
-    padding: 24,
-    borderRadius: 20,
-    backgroundColor: '#667eea',
+  walletCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    padding: 20,
+    borderRadius: 12,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
   },
-  balanceHeader: {
+  cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 12,
+    flex: 1
+  },
+  walletInfo: {
+    flex: 1,
+    marginLeft: 12
+  },
+  walletAddress: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 16,
+    lineHeight: 20
+  },
+  connectButton: {
+    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8
+  },
+  connectButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8
+  },
+  balanceContainer: {
+    flexDirection: 'row',
+    marginBottom: 16
+  },
+  balanceItem: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginHorizontal: 4
   },
   balanceLabel: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 16,
-  },
-  blockchainBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(67, 233, 123, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  blockchainText: {
-    color: '#43e97b',
     fontSize: 12,
-    fontWeight: '500',
-  },
-  balanceAmount: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 24,
+    color: '#666',
+    marginBottom: 4
   },
   balanceValue: {
-    color: '#fff',
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  balanceCurrency: {
-    color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 16,
-    marginLeft: 8,
+    fontWeight: 'bold',
+    color: '#1a1a1a'
   },
-  balanceActions: {
+  actionButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 12
   },
   actionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
     paddingVertical: 12,
-    borderRadius: 12,
-  },
-  sendButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  receiveButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  addButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF'
   },
   actionButtonText: {
-    color: '#fff',
+    color: '#007AFF',
     fontSize: 14,
     fontWeight: '600',
+    marginLeft: 8
   },
-  currencySection: {
-    paddingHorizontal: 20,
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  currencyList: {
-    flexDirection: 'row',
-    gap: 16,
-    paddingRight: 20,
-  },
-  currencyCard: {
-    width: 140,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  selectedCurrencyCard: {
-    borderWidth: 2,
-    borderColor: '#667eea',
-  },
-  currencyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  currencyCode: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  currencyChange: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  currencyName: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  currencyBalance: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  quickActionsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 30,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  quickActionCard: {
-    width: (width - 56) / 2,
+  subscriptionCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginTop: 0,
     padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  quickActionText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  transactionsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 30,
-  },
-  transactionsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  transactionsList: {
-    borderRadius: 16,
+    borderRadius: 12,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 4
   },
-  transactionItem: {
+  subscriptionDetails: {
+    marginTop: 12
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#666'
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a'
+  },
+  networkCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginTop: 0,
+    padding: 20,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  networkDetails: {
+    marginTop: 12,
+    marginBottom: 16
+  },
+  exploreButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF'
   },
-  transactionDetails: {
-    flex: 1,
-  },
-  transactionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  transactionDate: {
-    fontSize: 14,
-  },
-  transactionAmount: {
-    fontSize: 16,
+  exploreButtonText: {
+    color: '#007AFF',
+    fontSize: 12,
     fontWeight: '600',
+    marginLeft: 4
   },
+  infoCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginTop: 0,
+    padding: 20,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginTop: 12
+  }
 });
