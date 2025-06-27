@@ -100,7 +100,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Voice Assistant Button */}
-        <View style={styles.voiceSection}>
+        {/* <View style={styles.voiceSection}>
           <MultiAgentTravelAI
             agentManager={agentManager}
             userId="user_123" // Replace with actual user ID
@@ -121,7 +121,7 @@ export default function HomeScreen() {
               {currentSession.conversationHistory.length} messages in current session
             </Text>
           )}
-        </View>
+        </View> */}
 
         {/* Current Trip Card */}
         <View style={styles.currentTripCard}>

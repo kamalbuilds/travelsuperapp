@@ -1,32 +1,29 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
-  Plane,
-  Hotel,
   Car,
-  MapPin,
-  Calendar,
-  Users,
-  Search,
-  Filter,
-  Star,
   Clock,
-  Wifi,
-  Coffee,
-  Utensils,
+  Filter,
+  Hotel,
+  MapPin,
+  Plane,
+  Search,
+  Star
 } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -64,33 +61,169 @@ const flightResults = [
   },
 ];
 
-const hotelResults = [
-  {
-    id: 1,
-    name: 'Tokyo Grand Hotel',
-    image: 'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=400',
-    rating: 4.8,
-    reviews: 1250,
-    location: 'Shibuya, Tokyo',
-    price: 180,
-    amenities: ['Wifi', 'Pool', 'Gym', 'Restaurant'],
-  },
-  {
-    id: 2,
-    name: 'Sakura Boutique Hotel',
-    image: 'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=400',
-    rating: 4.6,
-    reviews: 890,
-    location: 'Asakusa, Tokyo',
-    price: 120,
-    amenities: ['Wifi', 'Breakfast', 'Spa'],
-  },
-];
-
 export default function BookingScreen() {
   const colorScheme = useColorScheme();
   const [activeTab, setActiveTab] = useState('flights');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Hotel search state
+  const [hotelStartDate, setHotelStartDate] = useState('2024-06-20');
+  const [hotelEndDate, setHotelEndDate] = useState('2024-06-21');
+  const [hotelAdults, setHotelAdults] = useState(2);
+  const [hotelRooms, setHotelRooms] = useState(1);
+  const [hotelLoading, setHotelLoading] = useState(false);
+  const [hotelError, setHotelError] = useState('');
+  const [hotelResults, setHotelResults] = useState<any[]>([]);
+
+  // Default hotel IDs for demo
+  const defaultHotelIds = [5568, 12341234];
+
+  // Fetch hotels from API (for now, use hardcoded sample data)
+  const fetchHotels = async () => {
+    setHotelLoading(true);
+    setHotelError('');
+    setHotelResults([]);
+    try {
+      // Hardcoded sample response
+      const sampleData = {
+        "root": {
+          "api_version": 4,
+          "currency": "GBP",
+          "start_date": "2018-04-28",
+          "end_date": "2018-04-29",
+          "lang": "en_GB",
+          "rate_model": "AI",
+          "room_adults_1":2,
+          "num_rooms": 1,
+          "hotel_ids": [5568,12341234],
+          "hotels": [
+            {
+              "hotel_id": 5568,
+              "room_types": [
+                [
+                  {
+                    "Executive Doubleroom ": {
+                      "booking_fee": 0,
+                      "breakfast_included": "true",
+                      "currency": "GBP",
+                      "final_rate": 202.5,
+                      "free_cancellation": "true",
+                      "hotel_fee": 0,
+                      "local_tax": 2.5,
+                      "meal_code": "BB",
+                      "net_rate": 160,
+                      "payment_type": "prepaid",
+                      "resort_fee": 0,
+                      "room_code": "DOUBLE",
+                      "service_charge": 0,
+                      "url": "https://advertiser-site.com/hoteladlon/Executive_Double?start_date=2018-04-28&end_date=2018-04-29&num_adults=2",
+                      "mobileURL": "https://advertiser-mobilesite.com/hoteladlon/Executive_Double?start_date=2018-04-28&end_date=2018-04-29&num_adults=2",
+                      "vat": 40,
+                      "rate_type": "DEFAULT"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "Executive Doubleroom Mobile Offer": {
+                      "booking_fee": 0,
+                      "breakfast_included": "true",
+                      "currency": "GBP",
+                      "final_rate": 202.5,
+                      "free_cancellation": "true",
+                      "hotel_fee": 0,
+                      "local_tax": 2.5,
+                      "meal_code": "BB",
+                      "net_rate": 160,
+                      "payment_type": "prepaid",
+                      "resort_fee": 0,
+                      "room_code": "DOUBLE MBL",
+                      "service_charge": 0,
+                      "url": "",
+                      "mobileURL": "https://advertiser-mobilesite.com/hoteladlon/Executive_Double?start_date=2018-04-28&end_date=2018-04-29&num_adults=2",
+                      "vat": 40,
+                      "rate_type": "MOBILE"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "Freaky Double Mobile Offer": {
+                      "booking_fee": 0,
+                      "breakfast_included": "true",
+                      "currency": "GBP",
+                      "discounts": [
+                        {
+                          "booking_fee": 0,
+                          "final_rate": 10,
+                          "hotel_fee": 0,
+                          "local_tax": 0.0,
+                          "marketing_text": "5% off mobile special",
+                          "net_rate": 8,
+                          "resort_fee": 0,
+                          "service_charge": 0,
+                          "vat": 2
+                        }
+                      ],
+                      "final_rate": 202.5,
+                      "free_cancellation": "true",
+                      "hotel_fee": 0,
+                      "local_tax": 2.5,
+                      "meal_code": "RO",
+                      "net_rate": 160,
+                      "payment_type": "prepaid",
+                      "resort_fee": 0,
+                      "room_code": "DOUBLE MBL",
+                      "service_charge": 0,
+                      "url": "",
+                      "mobileURL": "https://advertiser-mobilesite.com/hoteladlon/Freaky_Double?start_date=2018-04-28&end_date=2018-04-29&num_adults=2",
+                      "vat": 40,
+                      "rate_type": "MOBILE"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "hotel_id": 12341234,
+              "room_types": [
+                [
+                  {
+                    "Luxury Double": {
+                      "booking_fee": 0,
+                      "breakfast_included": "true",
+                      "currency": "GBP",
+                      "final_rate": 74.5,
+                      "free_cancellation": "true",
+                      "hotel_fee": 0,
+                      "local_tax": 2.5,
+                      "meal_code": "RO",
+                      "net_rate": 60.00,
+                      "payment_type": "prepaid",
+                      "resort_fee": 0,
+                      "room_code": "DOUBLE",
+                      "service_charge": 0,
+                      "url": "https://advertiser-site.com/hotelmagnum/Luxury_Double?start_date=2018-04-28&end_date=2018-04-29&num_adults=2",
+                      "mobileURL": "",
+                      "vat": 12,
+                      "rate_type": "REWARD"
+                    }
+                  }
+                ]
+              ]
+            }
+          ]
+        }
+      };
+      setTimeout(() => {
+        setHotelResults(sampleData.root.hotels);
+        setHotelLoading(false);
+      }, 500); // simulate network delay
+    } catch (err: any) {
+      setHotelError('Error loading hotels');
+      setHotelLoading(false);
+    }
+  };
 
   const renderFlightCard = (flight: any) => (
     <View key={flight.id} style={[styles.resultCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -156,56 +289,52 @@ export default function BookingScreen() {
     </View>
   );
 
-  const renderHotelCard = (hotel: any) => (
-    <View key={hotel.id} style={[styles.resultCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      <Image source={{ uri: hotel.image }} style={styles.hotelImage} />
-      <View style={styles.hotelContent}>
-        <View style={styles.hotelHeader}>
-          <Text style={[styles.hotelName, { color: Colors[colorScheme ?? 'light'].text }]}>
-            {hotel.name}
-          </Text>
-          <View style={styles.ratingContainer}>
-            <Star size={14} color="#FFD700" fill="#FFD700" />
-            <Text style={[styles.ratingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {hotel.rating}
-            </Text>
-            <Text style={[styles.reviewsText, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
-              ({hotel.reviews})
-            </Text>
+  const renderHotelCard = (hotel: any) => {
+    // hotel.room_types is an array of arrays of objects
+    const firstRoom = hotel.room_types?.[0]?.[0];
+    const roomName = firstRoom ? Object.keys(firstRoom)[0] : '';
+    const room = firstRoom ? firstRoom[roomName] : null;
+    return (
+      <View key={hotel.hotel_id} style={[styles.resultCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>        
+        <View style={styles.hotelContent}>
+          <View style={styles.hotelHeader}>
+            <Text style={[styles.hotelName, { color: Colors[colorScheme ?? 'light'].text }]}>Hotel ID: {hotel.hotel_id}</Text>
+            {room && (
+              <View style={styles.ratingContainer}>
+                <Star size={14} color="#FFD700" fill="#FFD700" />
+                <Text style={[styles.ratingText, { color: Colors[colorScheme ?? 'light'].text }]}>-</Text>
+              </View>
+            )}
           </View>
-        </View>
-
-        <View style={styles.locationContainer}>
-          <MapPin size={14} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
-          <Text style={[styles.locationText, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
-            {hotel.location}
-          </Text>
-        </View>
-
-        <View style={styles.amenitiesContainer}>
-          {hotel.amenities.slice(0, 3).map((amenity: string, index: number) => (
-            <View key={index} style={styles.amenityTag}>
-              <Text style={styles.amenityText}>{amenity}</Text>
+          <View style={styles.locationContainer}>
+            <MapPin size={14} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
+            <Text style={[styles.locationText, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>-</Text>
+          </View>
+          {room && (
+            <View style={styles.amenitiesContainer}>
+              <View style={styles.amenityTag}><Text style={styles.amenityText}>{room.breakfast_included === 'true' ? 'Breakfast' : 'Room Only'}</Text></View>
+              <View style={styles.amenityTag}><Text style={styles.amenityText}>{room.free_cancellation === 'true' ? 'Free Cancellation' : 'No Cancellation'}</Text></View>
             </View>
-          ))}
-        </View>
-
-        <View style={styles.hotelFooter}>
-          <View style={styles.priceContainer}>
-            <Text style={[styles.priceLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
-              From
-            </Text>
-            <Text style={[styles.hotelPrice, { color: Colors[colorScheme ?? 'light'].tint }]}>
-              ${hotel.price}/night
-            </Text>
+          )}
+          <View style={styles.hotelFooter}>
+            <View style={styles.priceContainer}>
+              <Text style={[styles.priceLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>From</Text>
+              <Text style={[styles.hotelPrice, { color: Colors[colorScheme ?? 'light'].tint }]}>
+                £{room ? room.final_rate : '-'} /night
+              </Text>
+            </View>
+            {room && (
+              <TouchableOpacity style={styles.bookButton} onPress={() => {
+                if (room.url) router.push(room.url);
+              }}>
+                <Text style={styles.bookButtonText}>Book</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <TouchableOpacity style={styles.bookButton}>
-            <Text style={styles.bookButtonText}>Book</Text>
-          </TouchableOpacity>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -302,31 +431,50 @@ export default function BookingScreen() {
       <ScrollView style={styles.resultsContainer} showsVerticalScrollIndicator={false}>
         {activeTab === 'flights' && (
           <View style={styles.resultsSection}>
-            <Text style={[styles.resultsTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Flight Results
-            </Text>
+            <Text style={[styles.resultsTitle, { color: Colors[colorScheme ?? 'light'].text }]}>Flight Results</Text>
             {flightResults.map(renderFlightCard)}
           </View>
         )}
-
         {activeTab === 'hotels' && (
           <View style={styles.resultsSection}>
-            <Text style={[styles.resultsTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Hotel Results
-            </Text>
+            <Text style={[styles.resultsTitle, { color: Colors[colorScheme ?? 'light'].text }]}>Hotel Results</Text>
+            {/* Hotel Search Form */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: Colors[colorScheme ?? 'light'].tabIconDefault }}>Start Date</Text>
+                <TextInput value={hotelStartDate} onChangeText={setHotelStartDate} style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 6, padding: 6, color: Colors[colorScheme ?? 'light'].text }} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: Colors[colorScheme ?? 'light'].tabIconDefault }}>End Date</Text>
+                <TextInput value={hotelEndDate} onChangeText={setHotelEndDate} style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 6, padding: 6, color: Colors[colorScheme ?? 'light'].text }} />
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: Colors[colorScheme ?? 'light'].tabIconDefault }}>Adults</Text>
+                <TextInput value={hotelAdults.toString()} onChangeText={v => setHotelAdults(Number(v))} keyboardType="numeric" style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 6, padding: 6, color: Colors[colorScheme ?? 'light'].text }} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: Colors[colorScheme ?? 'light'].tabIconDefault }}>Rooms</Text>
+                <TextInput value={hotelRooms.toString()} onChangeText={v => setHotelRooms(Number(v))} keyboardType="numeric" style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 6, padding: 6, color: Colors[colorScheme ?? 'light'].text }} />
+              </View>
+            </View>
+            <TouchableOpacity style={[styles.bookButton, { marginBottom: 16 }]} onPress={fetchHotels}>
+              <Text style={styles.bookButtonText}>Search Hotels</Text>
+            </TouchableOpacity>
+            {hotelLoading && <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].tint} style={{ marginVertical: 20 }} />}
+            {hotelError ? <Text style={{ color: 'red', marginBottom: 12 }}>{hotelError}</Text> : null}
+            {hotelResults.length === 0 && !hotelLoading && !hotelError && (
+              <Text style={{ color: Colors[colorScheme ?? 'light'].tabIconDefault, marginBottom: 12 }}>No hotels found. Please search.</Text>
+            )}
             {hotelResults.map(renderHotelCard)}
           </View>
         )}
-
         {activeTab === 'cars' && (
           <View style={styles.emptyState}>
             <Car size={48} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
-            <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Car Rentals Coming Soon
-            </Text>
-            <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
-              We're working on adding car rental options to make your trip complete
-            </Text>
+            <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>Car Rentals Coming Soon</Text>
+            <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>We're working on adding car rental options to make your trip complete</Text>
           </View>
         )}
       </ScrollView>
@@ -391,11 +539,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+      }
+    }),
   },
   searchInput: {
     flex: 1,
@@ -436,11 +591,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+      }
+    }),
   },
   // Flight Card Styles
   flightHeader: {
