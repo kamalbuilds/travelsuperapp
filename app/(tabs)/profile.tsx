@@ -2,14 +2,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Bell, ChevronRight, CreditCard, Crown, CreditCard as Edit, Globe, LogOut, Mic, Settings, Shield, Video } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,7 +30,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     loadUserData();
-    
+
     // Set up payment event listeners
     paymentManager.onEntitlementsUpdated((entitlements) => {
       setUserEntitlements(entitlements);
@@ -50,14 +50,7 @@ export default function ProfileScreen() {
   };
 
   const handleUpgrade = () => {
-    Alert.alert(
-      'Upgrade to TravelPro',
-      'Get unlimited AI conversations, video consultations, and premium features for $9.99/month',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Upgrade Now', onPress: () => console.log('Upgrade pressed') },
-      ]
-    );
+    setShowPaymentScreen(true);
   };
 
   const handleUpgradeSubscription = () => {
@@ -184,7 +177,7 @@ export default function ProfileScreen() {
           <Text style={styles.cardDescription}>
             Upgrade to unlock premium travel features
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.upgradeButton}
             onPress={handleUpgradeSubscription}
           >
@@ -195,35 +188,35 @@ export default function ProfileScreen() {
     }
 
     const plan = SUBSCRIPTION_PLANS[userEntitlements.tier];
-    
+
     return (
       <View style={styles.subscriptionCard}>
         <View style={styles.cardHeader}>
-          <MaterialIcons 
-            name={userEntitlements.tier === SubscriptionTier.VIP ? "star" : "star-half"} 
-            size={24} 
-            color="#4CAF50" 
+          <MaterialIcons
+            name={userEntitlements.tier === SubscriptionTier.VIP ? "star" : "star-half"}
+            size={24}
+            color="#4CAF50"
           />
           <Text style={styles.cardTitle}>{plan.name}</Text>
           <View style={styles.activeBadge}>
             <Text style={styles.activeBadgeText}>ACTIVE</Text>
           </View>
         </View>
-        
+
         <Text style={styles.cardDescription}>{plan.description}</Text>
-        
+
         <View style={styles.paymentMethodContainer}>
-          <MaterialIcons 
-            name={userEntitlements.paymentMethod === 'traditional' ? "credit-card" : "account-balance-wallet"} 
-            size={16} 
-            color="#666" 
+          <MaterialIcons
+            name={userEntitlements.paymentMethod === 'traditional' ? "credit-card" : "account-balance-wallet"}
+            size={16}
+            color="#666"
           />
           <Text style={styles.paymentMethodText}>
             {userEntitlements.paymentMethod === 'traditional' ? 'Traditional Payment' : 'Crypto Payment'}
           </Text>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.manageButton}
           onPress={handleManageSubscription}
         >
@@ -239,20 +232,20 @@ export default function ProfileScreen() {
     }
 
     const features = userEntitlements.features;
-    
+
     return (
       <View style={styles.featuresCard}>
         <Text style={styles.cardTitle}>Your Features</Text>
-        
+
         {Object.entries(features).map(([feature, value]) => {
           if (value === false) return null;
-          
+
           return (
             <View key={feature} style={styles.featureItem}>
-              <MaterialIcons 
-                name="check-circle" 
-                size={20} 
-                color="#4CAF50" 
+              <MaterialIcons
+                name="check-circle"
+                size={20}
+                color="#4CAF50"
               />
               <Text style={styles.featureText}>
                 {feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -279,22 +272,27 @@ export default function ProfileScreen() {
           setShowPaymentScreen(false);
           Alert.alert('Error', error);
         }}
+        onClose={() => setShowPaymentScreen(false)}
       />
     );
   }
 
+  const textColor = Colors[colorScheme ?? 'light'].text;
+  const defaultBgColor = Colors[colorScheme ?? 'light'].background;
+  const defaultIconColor = Colors[colorScheme ?? 'light'].tabIconDefault;
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: defaultBgColor }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+          <Text style={[styles.title, { color: textColor }]}>
             Profile
           </Text>
         </View>
 
         {/* Profile Card */}
-        <View style={[styles.profileCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={[styles.profileCard, { backgroundColor: defaultBgColor }]}>
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
               <Image
@@ -306,10 +304,10 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: Colors[colorScheme ?? 'light'].text }]}>
+              <Text style={[styles.userName, { color: textColor }]}>
                 Sarah Johnson
               </Text>
-              <Text style={[styles.userEmail, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+              <Text style={[styles.userEmail, { color: defaultIconColor }]}>
                 sarah.johnson@email.com
               </Text>
               <View style={styles.membershipBadge}>
@@ -324,24 +322,24 @@ export default function ProfileScreen() {
         </View>
 
         {/* Stats */}
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, { backgroundColor: defaultBgColor }]}>
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: Colors[colorScheme ?? 'light'].text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+            <Text style={[styles.statNumber, { color: textColor }]}>12</Text>
+            <Text style={[styles.statLabel, { color: defaultIconColor }]}>
               Trips Planned
             </Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: Colors[colorScheme ?? 'light'].text }]}>8</Text>
-            <Text style={[styles.statLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+            <Text style={[styles.statNumber, { color: textColor }]}>8</Text>
+            <Text style={[styles.statLabel, { color: defaultIconColor }]}>
               Countries Visited
             </Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: Colors[colorScheme ?? 'light'].text }]}>156</Text>
-            <Text style={[styles.statLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+            <Text style={[styles.statNumber, { color: textColor }]}>156</Text>
+            <Text style={[styles.statLabel, { color: defaultIconColor }]}>
               AI Conversations
             </Text>
           </View>
@@ -354,7 +352,7 @@ export default function ProfileScreen() {
               key={index}
               style={[
                 styles.menuItem,
-                { backgroundColor: Colors[colorScheme ?? 'light'].background }
+                { backgroundColor: defaultBgColor }
               ]}
               onPress={item.onPress}
             >
@@ -363,7 +361,7 @@ export default function ProfileScreen() {
                   <item.icon size={20} color={Colors[colorScheme ?? 'light'].tint} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  <Text style={[styles.menuItemTitle, { color: textColor }]}>
                     {item.title}
                   </Text>
                   <Text style={[styles.menuItemSubtitle, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
@@ -380,13 +378,13 @@ export default function ProfileScreen() {
 
         {/* Subscription Status */}
         <View style={styles.subscriptionSection}>
-          <Text style={styles.subscriptionTitle}>Subscription Status</Text>
+          <Text style={[styles.subscriptionTitle, { color: textColor }]}>Subscription Status</Text>
           {renderSubscriptionStatus()}
         </View>
 
         {/* Feature Access */}
         <View style={styles.featureAccessSection}>
-          <Text style={styles.featureAccessTitle}>Feature Access</Text>
+          <Text style={[styles.featureAccessTitle, { color: textColor }]}>Feature Access</Text>
           {renderFeatureAccess()}
         </View>
 
@@ -491,8 +489,8 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#FFD700',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
   },
   upgradeButtonText: {
     color: '#000',
@@ -503,7 +501,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 20,
     marginBottom: 30,
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -511,6 +508,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)'
   },
   statItem: {
     flex: 1,
@@ -527,7 +526,7 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255,255,255,0.6)',
     marginHorizontal: 16,
   },
   menuSection: {
@@ -679,6 +678,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)'
   },
   logoutText: {
     color: '#ff4757',

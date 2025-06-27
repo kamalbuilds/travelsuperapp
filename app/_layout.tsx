@@ -3,7 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import 'react-native-reanimated/lib/reanimated2/js-reanimated';
+// import 'react-native-reanimated/lib/reanimated2/js-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -48,33 +48,33 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
-        <Stack.Screen 
-          name="booking" 
-          options={{ 
+        <Stack.Screen
+          name="booking"
+          options={{
             title: 'Book Your Trip',
-            headerShown: true 
-          }} 
+            headerShown: true
+          }}
         />
-        <Stack.Screen 
-          name="onboarding" 
-          options={{ 
+        <Stack.Screen
+          name="onboarding"
+          options={{
             title: 'Welcome',
-            headerShown: false 
-          }} 
+            headerShown: false
+          }}
         />
-        <Stack.Screen 
-          name="trip-planning" 
-          options={{ 
+        <Stack.Screen
+          name="trip-planning"
+          options={{
             title: 'Plan Your Trip',
-            headerShown: true 
-          }} 
+            headerShown: true
+          }}
         />
-        <Stack.Screen 
-          name="emergency" 
-          options={{ 
+        <Stack.Screen
+          name="emergency"
+          options={{
             title: 'Emergency Assistance',
-            headerShown: true 
-          }} 
+            headerShown: true
+          }}
         />
       </Stack>
     </ThemeProvider>

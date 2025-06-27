@@ -1,19 +1,20 @@
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
+import { getCurrentPlatformConfig } from '@/constants/PaymentConfig';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { paymentManager, UserEntitlements } from '@/utils/HybridPaymentManager';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity
 } from 'react-native';
-
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { getCurrentPlatformConfig } from '@/constants/PaymentConfig';
-import { paymentManager, UserEntitlements } from '@/utils/HybridPaymentManager';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 interface WalletData {
   avaxBalance: string;
   usdValue: string;
@@ -31,11 +32,12 @@ export default function WalletScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [avaxPrice, setAvaxPrice] = useState(20); // Mock price for demo
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     loadWalletData();
     loadUserEntitlements();
-    
+
     // Set up payment event listeners
     paymentManager.onEntitlementsUpdated((entitlements) => {
       setUserEntitlements(entitlements);
@@ -45,7 +47,7 @@ export default function WalletScreen() {
   const loadWalletData = async () => {
     try {
       setIsLoading(true);
-      
+
       // For demo purposes, we'll simulate wallet data
       // In a real app, you would connect to a wallet or use stored wallet info
       const mockWalletData: WalletData = {
@@ -54,7 +56,7 @@ export default function WalletScreen() {
         walletAddress: '0x742d35A6b85123...cd45B9C1f4A2e',
         isConnected: false // Set to false for demo
       };
-      
+
       setWalletData(mockWalletData);
     } catch (error) {
       console.error('Failed to load wallet data:', error);
@@ -106,7 +108,7 @@ export default function WalletScreen() {
     );
   };
 
-  const simulateWalletConnection = (walletType: string) => {
+  const simulateWalletConnection = async (walletType: 'MetaMask' | 'WalletConnect' | 'Core Wallet') => {
     // Simulate wallet connection
     setTimeout(() => {
       setWalletData(prev => ({
@@ -180,12 +182,10 @@ export default function WalletScreen() {
             <MaterialIcons name="account-balance-wallet" size={32} color="#FF9500" />
             <ThemedText style={styles.cardTitle}>Connect Your Wallet</ThemedText>
           </ThemedView>
-          
           <ThemedText style={styles.cardDescription}>
             Connect your Avalanche wallet to pay for subscriptions with AVAX
           </ThemedText>
-          
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.connectButton}
             onPress={handleConnectWallet}
           >
@@ -208,29 +208,29 @@ export default function WalletScreen() {
             <MaterialIcons name="power-settings-new" size={20} color="#FF5722" />
           </TouchableOpacity>
         </ThemedView>
-        
+
         <ThemedView style={styles.balanceContainer}>
           <ThemedView style={styles.balanceItem}>
             <ThemedText style={styles.balanceLabel}>AVAX Balance</ThemedText>
             <ThemedText style={styles.balanceValue}>{walletData.avaxBalance} AVAX</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.balanceItem}>
             <ThemedText style={styles.balanceLabel}>USD Value</ThemedText>
             <ThemedText style={styles.balanceValue}>${walletData.usdValue}</ThemedText>
           </ThemedView>
         </ThemedView>
-        
+
         <ThemedView style={styles.actionButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={handleBuyAVAX}
           >
             <MaterialIcons name="add" size={20} color="#007AFF" />
             <ThemedText style={styles.actionButtonText}>Buy AVAX</ThemedText>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => Alert.alert('Send', 'Send AVAX feature coming soon')}
           >
@@ -253,22 +253,22 @@ export default function WalletScreen() {
           <MaterialIcons name="payment" size={24} color="#4CAF50" />
           <ThemedText style={styles.cardTitle}>Crypto Subscription</ThemedText>
         </ThemedView>
-        
+
         <ThemedText style={styles.cardDescription}>
           Your subscription is paid with cryptocurrency
         </ThemedText>
-        
+
         <ThemedView style={styles.subscriptionDetails}>
           <ThemedView style={styles.detailRow}>
             <ThemedText style={styles.detailLabel}>Plan:</ThemedText>
             <ThemedText style={styles.detailValue}>{userEntitlements.tier.toUpperCase()}</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.detailRow}>
             <ThemedText style={styles.detailLabel}>Payment Method:</ThemedText>
             <ThemedText style={styles.detailValue}>AVAX Cryptocurrency</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.detailRow}>
             <ThemedText style={styles.detailLabel}>Last Updated:</ThemedText>
             <ThemedText style={styles.detailValue}>
@@ -282,32 +282,34 @@ export default function WalletScreen() {
 
   const renderNetworkInfo = () => {
     const network = getCurrentPlatformConfig().avalanche;
-    
+
+    if (!walletData.isConnected) return null;
+
     return (
       <ThemedView style={styles.networkCard}>
         <ThemedView style={styles.cardHeader}>
           <MaterialIcons name="network-check" size={24} color="#E74C3C" />
           <ThemedText style={styles.cardTitle}>Avalanche Network</ThemedText>
         </ThemedView>
-        
+
         <ThemedView style={styles.networkDetails}>
           <ThemedView style={styles.detailRow}>
             <ThemedText style={styles.detailLabel}>Network:</ThemedText>
             <ThemedText style={styles.detailValue}>{network.name}</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.detailRow}>
             <ThemedText style={styles.detailLabel}>Chain ID:</ThemedText>
             <ThemedText style={styles.detailValue}>{network.chainId}</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.detailRow}>
             <ThemedText style={styles.detailLabel}>Currency:</ThemedText>
             <ThemedText style={styles.detailValue}>{network.symbol}</ThemedText>
           </ThemedView>
         </ThemedView>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.exploreButton}
           onPress={() => Alert.alert('Explorer', `Opening ${network.blockExplorerUrl}`)}
         >
@@ -328,48 +330,53 @@ export default function WalletScreen() {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-        />
-      }
-    >
-      <ThemedView style={styles.header}>
-        <ThemedText style={styles.headerTitle}>Crypto Wallet</ThemedText>
-        <ThemedText style={styles.headerSubtitle}>
-          Manage your AVAX and crypto subscriptions
-        </ThemedText>
-      </ThemedView>
-
-      {renderWalletStatus()}
-      {renderSubscriptionPayments()}
-      {renderNetworkInfo()}
-
-      <ThemedView style={styles.infoCard}>
-        <ThemedView style={styles.cardHeader}>
-          <MaterialIcons name="info" size={24} color="#2196F3" />
-          <ThemedText style={styles.cardTitle}>About Crypto Payments</ThemedText>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+          />
+        }
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        <ThemedView style={styles.header}>
+          <ThemedText style={styles.headerTitle}>Crypto Wallet</ThemedText>
+          <ThemedText style={styles.headerSubtitle}>
+            Manage your AVAX and crypto subscriptions
+          </ThemedText>
         </ThemedView>
-        
-        <ThemedText style={styles.infoText}>
-          • Pay for subscriptions with AVAX cryptocurrency{'\n'}
-          • Lower transaction fees on Avalanche network{'\n'}
-          • Decentralized and secure payments{'\n'}
-          • Full transparency on blockchain{'\n'}
-          • No chargebacks or payment disputes
-        </ThemedText>
-      </ThemedView>
-    </ScrollView>
+
+        {/* Body section */}
+        {renderWalletStatus()}
+        {renderSubscriptionPayments()}
+        {renderNetworkInfo()}
+
+        <ThemedView style={styles.infoCard}>
+          <ThemedView style={styles.cardHeader}>
+            <MaterialIcons name="info" size={24} color="#2196F3" />
+            <ThemedText style={styles.cardTitle}>About Crypto Payments</ThemedText>
+          </ThemedView>
+
+          <ThemedText style={styles.infoText}>
+            • Pay for subscriptions with AVAX cryptocurrency{'\n'}
+            • Lower transaction fees on Avalanche network{'\n'}
+            • Decentralized and secure payments{'\n'}
+            • Full transparency on blockchain{'\n'}
+            • No chargebacks or payment disputes
+          </ThemedText>
+        </ThemedView>
+
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa'
+    paddingBottom: 14,
   },
   loadingContainer: {
     flex: 1,
@@ -385,9 +392,8 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0'
+    borderBottomColor: 'rgba(255,255,255,0.2)'
   },
   headerTitle: {
     fontSize: 24,
@@ -399,8 +405,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center'
   },
+  bodySection: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    alignSelf: 'stretch',
+  },
   walletCard: {
-    backgroundColor: '#fff',
     margin: 16,
     padding: 20,
     borderRadius: 12,
@@ -525,7 +539,6 @@ const styles = StyleSheet.create({
     color: '#1a1a1a'
   },
   networkCard: {
-    backgroundColor: '#fff',
     margin: 16,
     marginTop: 0,
     padding: 20,
@@ -534,7 +547,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   networkDetails: {
     marginTop: 12,
@@ -557,7 +572,6 @@ const styles = StyleSheet.create({
     marginLeft: 4
   },
   infoCard: {
-    backgroundColor: '#fff',
     margin: 16,
     marginTop: 0,
     padding: 20,

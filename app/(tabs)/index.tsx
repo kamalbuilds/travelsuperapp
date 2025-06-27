@@ -40,7 +40,7 @@ export default function HomeScreen() {
 
   const handleAIMessage = (message: Message) => {
     setMessages(prev => [...prev, message]);
-    
+
     // Handle AI-suggested actions
     if (message.source === 'ai' && message.message.includes('Navigate to')) {
       // Extract navigation intent and route accordingly
@@ -101,7 +101,7 @@ export default function HomeScreen() {
 
         {/* Voice Assistant Button */}
         <View style={styles.voiceSection}>
-          <MultiAgentTravelAI
+          {/* <MultiAgentTravelAI
             agentManager={agentManager}
             userId="user_123" // Replace with actual user ID
             size="large"
@@ -112,7 +112,7 @@ export default function HomeScreen() {
             onSessionUpdate={(session) => {
               setCurrentSession(session);
             }}
-          />
+          /> */}
           <Text style={[styles.voiceText, { color: Colors[colorScheme ?? 'light'].text }]}>
             Tap to speak with your AI travel assistant
           </Text>

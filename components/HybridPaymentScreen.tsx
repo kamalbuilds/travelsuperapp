@@ -1,27 +1,29 @@
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Events, EventTypes, Order, TransakConfig, TransakWebView } from '@transak/react-native-sdk';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { WebView } from 'react-native-webview';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-    getCurrentPlatformConfig,
-    SUBSCRIPTION_PLANS,
-    SubscriptionTier
+  getCurrentPlatformConfig,
+  SUBSCRIPTION_PLANS,
+  SubscriptionTier
 } from '../constants/PaymentConfig';
 import {
-    paymentManager,
-    PaymentResult,
-    UserEntitlements
+  paymentManager,
+  PaymentResult,
+  UserEntitlements
 } from '../utils/HybridPaymentManager';
 
 const { width, height } = Dimensions.get('window');
@@ -30,21 +32,24 @@ interface HybridPaymentScreenProps {
   onSuccess?: (result: PaymentResult) => void;
   onError?: (error: string) => void;
   initialTier?: SubscriptionTier;
+  onClose?: () => void;
 }
 
 export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
   onSuccess,
   onError,
-  initialTier = SubscriptionTier.PREMIUM
+  initialTier = SubscriptionTier.PREMIUM,
+  onClose
 }) => {
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier>(initialTier);
   const [selectedDuration, setSelectedDuration] = useState<'monthly' | 'yearly'>('monthly');
-  const [paymentMethod, setPaymentMethod] = useState<'traditional' | 'crypto'>('traditional');
+  const [paymentMethod, setPaymentMethod] = useState<'traditional' | 'crypto' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [offerings, setOfferings] = useState<any[]>([]);
   const [currentEntitlements, setCurrentEntitlements] = useState<UserEntitlements | null>(null);
   const [showTransakModal, setShowTransakModal] = useState(false);
   const [transakUrl, setTransakUrl] = useState<string>('');
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     initializePaymentManager();
@@ -55,7 +60,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
   const initializePaymentManager = async () => {
     try {
       await paymentManager.initialize();
-      
+
       // Set up event listeners
       paymentManager.onPurchaseCompleted((result) => {
         setIsLoading(false);
@@ -76,7 +81,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
 
     } catch (error) {
       console.error('Failed to initialize payment manager:', error);
-      Alert.alert('Error', 'Failed to initialize payment system');
+      // Alert.alert('Error', 'Failed to initialize payment system');
     }
   };
 
@@ -84,7 +89,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
     try {
       const traditionalOfferings = await paymentManager.getTraditionalOfferings();
       const cryptoOfferings = paymentManager.getCryptoOfferings();
-      
+
       setOfferings([...traditionalOfferings, ...cryptoOfferings]);
     } catch (error) {
       console.error('Failed to load offerings:', error);
@@ -105,7 +110,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
     try {
       const plan = SUBSCRIPTION_PLANS[selectedTier];
       const productId = plan.traditional[selectedDuration].productId;
-      
+
       await paymentManager.purchaseWithTraditionalPayment(productId, selectedTier);
     } catch (error) {
       setIsLoading(false);
@@ -121,7 +126,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
       const config = getCurrentPlatformConfig();
       const plan = SUBSCRIPTION_PLANS[selectedTier];
       const cryptoPrice = plan.crypto[selectedDuration];
-      
+
       // Generate mock Transak URL
       const mockTransakUrl = `${config.transak.hostURL}?` +
         `apiKey=${config.transak.apiKey}&` +
@@ -129,10 +134,10 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
         `cryptoAmount=${cryptoPrice.price}&` +
         `defaultNetwork=avalanche&` +
         `hideMenu=true`;
-      
+
       setTransakUrl(mockTransakUrl);
       setShowTransakModal(true);
-      
+
       // Start the crypto purchase process
       await paymentManager.purchaseWithCrypto(selectedTier, selectedDuration);
     } catch (error) {
@@ -161,11 +166,11 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
 
   const renderFeatureItem = (feature: string, value: any) => {
     if (value === false) return null;
-    
+
     return (
       <View key={feature} style={styles.featureItem}>
         <MaterialIcons name="check-circle" size={20} color="#4CAF50" />
-        <Text style={styles.featureText}>
+        <Text style={[styles.featureText, { color: Colors[colorScheme ?? 'light'].icon }]}>
           {feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}: {typeof value === 'string' ? value : 'Included'}
         </Text>
       </View>
@@ -176,7 +181,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
     const plan = SUBSCRIPTION_PLANS[tier];
     const isSelected = selectedTier === tier;
     const isCurrentTier = currentEntitlements?.tier === tier;
-    
+
     const traditionalPrice = plan.traditional[selectedDuration].price;
     const cryptoPrice = plan.crypto[selectedDuration];
 
@@ -191,28 +196,28 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
         onPress={() => setSelectedTier(tier)}
       >
         <View style={styles.planHeader}>
-          <Text style={styles.planName}>{plan.name}</Text>
+          <Text style={[styles.planName, { color: Colors[colorScheme ?? 'light'].text }]}>{plan.name}</Text>
           {isCurrentTier && (
             <View style={styles.currentBadge}>
               <Text style={styles.currentBadgeText}>CURRENT</Text>
             </View>
           )}
         </View>
-        
+
         <Text style={styles.planDescription}>{plan.description}</Text>
-        
+
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Traditional Payment:</Text>
           <Text style={styles.priceText}>${traditionalPrice}/{selectedDuration === 'monthly' ? 'month' : 'year'}</Text>
         </View>
-        
+
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Crypto Payment:</Text>
           <Text style={styles.priceText}>{cryptoPrice.price} {cryptoPrice.currency}/{selectedDuration === 'monthly' ? 'month' : 'year'}</Text>
         </View>
-        
+
         <View style={styles.featuresContainer}>
-          {Object.entries(plan.features).map(([feature, value]) => 
+          {Object.entries(plan.features).map(([feature, value]) =>
             renderFeatureItem(feature, value)
           )}
         </View>
@@ -220,171 +225,235 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
     );
   };
 
-  const renderWebViewModal = () => (
-    <Modal
-      visible={showTransakModal}
-      animationType="slide"
-      presentationStyle="pageSheet"
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Complete Crypto Payment</Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => {
-              setShowTransakModal(false);
-              setIsLoading(false);
-            }}
-          >
-            <MaterialIcons name="close" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
-        
-        {transakUrl ? (
-          <WebView
-            source={{ uri: transakUrl }}
-            style={styles.webview}
-            onNavigationStateChange={(navState) => {
-              // Handle navigation changes to detect completion
-              if (navState.url.includes('success')) {
+  const renderWebViewModal = () => {
+    const config = getCurrentPlatformConfig();
+
+    const plan = SUBSCRIPTION_PLANS[selectedTier];
+    const traditionalPrice = plan.traditional[selectedDuration];
+    const cryptoPrice = plan.crypto[selectedDuration];
+
+    console.log("crypto price", cryptoPrice, plan);
+
+    const transakConfig: TransakConfig = {
+      apiKey: process.env.EXPO_PUBLIC_TRANSAK_API_KEY!,
+      environment: config.transak.environment,
+      paymentMethod: "credit_debit_card",
+      partnerOrderId: `order_${Date.now()}`,
+      hideMenu: true,
+      hideExchangeScreen: false,
+      defaultFiatAmount: traditionalPrice.price,
+      defaultFiatCurrency: 'USD',
+      countryCode: 'US',
+      defaultCryptoCurrency: 'AVAX',
+      defaultNetwork: 'avaxcchain',
+    };
+
+    const handleEvent = (event: EventTypes, data: Order) => {
+      switch (event) {
+        case Events.ORDER_CREATED:
+          console.log(event, data);
+          break;
+
+        case Events.ORDER_PROCESSING:
+          console.log(event, data);
+          break;
+
+        case Events.ORDER_COMPLETED:
+          console.log(event, data);
+          break;
+
+        default:
+          console.log(event, data);
+      }
+    };
+    return (
+      <Modal
+        visible={showTransakModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Complete Crypto Payment</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => {
                 setShowTransakModal(false);
                 setIsLoading(false);
-                Alert.alert('Success', 'Crypto payment completed!');
-              }
-            }}
-          />
-        ) : (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text>Loading payment interface...</Text>
+              }}
+            >
+              <MaterialIcons name="close" size={24} color="#333" />
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
-    </Modal>
-  );
+
+          <TransakWebView
+            transakConfig={transakConfig}
+            onTransakEvent={handleEvent}
+            mediaPlaybackRequiresUserAction={false}
+            style={styles.webview}
+          />
+
+          {/* {transakUrl ? (
+            <WebView
+              source={{ uri: transakUrl }}
+              style={styles.webview}
+              onNavigationStateChange={(navState) => {
+                // Handle navigation changes to detect completion
+                if (navState.url.includes('success')) {
+                  setShowTransakModal(false);
+                  setIsLoading(false);
+                  Alert.alert('Success', 'Crypto payment completed!');
+                }
+              }}
+            />
+          ) : (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text>Loading payment interface...</Text>
+            </View>
+          )} */}
+        </View>
+      </Modal>
+    );
+  }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Choose Your Travel Plan</Text>
-        <Text style={styles.subtitle}>
-          Pay with traditional methods or cryptocurrency
-        </Text>
-        
-        {currentEntitlements && (
-          <View style={styles.currentSubscription}>
-            <Text style={styles.currentSubscriptionText}>
-              Current Plan: {SUBSCRIPTION_PLANS[currentEntitlements.tier].name} 
-              ({currentEntitlements.paymentMethod === 'traditional' ? 'Traditional' : 'Crypto'})
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Duration Selection */}
-      <View style={styles.durationSelector}>
-        <TouchableOpacity
-          style={[
-            styles.durationButton,
-            selectedDuration === 'monthly' && styles.selectedDuration
-          ]}
-          onPress={() => setSelectedDuration('monthly')}
-        >
-          <Text style={[
-            styles.durationText,
-            selectedDuration === 'monthly' && styles.selectedDurationText
-          ]}>
-            Monthly
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <ScrollView>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>Choose Your Travel Plan</Text>
+          <Text style={styles.subtitle}>
+            Pay with traditional methods or cryptocurrency
           </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[
-            styles.durationButton,
-            selectedDuration === 'yearly' && styles.selectedDuration
-          ]}
-          onPress={() => setSelectedDuration('yearly')}
-        >
-          <Text style={[
-            styles.durationText,
-            selectedDuration === 'yearly' && styles.selectedDurationText
-          ]}>
-            Yearly (Save 20%)
-          </Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Plans */}
-      <View style={styles.plansContainer}>
-        {Object.keys(SUBSCRIPTION_PLANS).map((tier) => 
-          renderSubscriptionPlan(tier as SubscriptionTier)
-        )}
-      </View>
-
-      {/* Payment Method Selection */}
-      <View style={styles.paymentMethodContainer}>
-        <Text style={styles.sectionTitle}>Choose Payment Method</Text>
-        
-        <TouchableOpacity
-          style={[
-            styles.paymentMethodButton,
-            paymentMethod === 'traditional' && styles.selectedPaymentMethod
-          ]}
-          onPress={() => setPaymentMethod('traditional')}
-        >
-          <MaterialIcons name="credit-card" size={24} color="#007AFF" />
-          <Text style={styles.paymentMethodText}>Traditional Payment</Text>
-          <Text style={styles.paymentMethodSubtext}>Credit Card, Apple Pay, Google Pay</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[
-            styles.paymentMethodButton,
-            paymentMethod === 'crypto' && styles.selectedPaymentMethod
-          ]}
-          onPress={() => setPaymentMethod('crypto')}
-        >
-          <MaterialIcons name="account-balance-wallet" size={24} color="#FF9500" />
-          <Text style={styles.paymentMethodText}>Crypto Payment</Text>
-          <Text style={styles.paymentMethodSubtext}>AVAX on Avalanche Network</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity
-          style={[styles.purchaseButton, isLoading && styles.disabledButton]}
-          onPress={paymentMethod === 'traditional' ? handleTraditionalPurchase : handleCryptoPurchase}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.purchaseButtonText}>
-              {paymentMethod === 'traditional' ? 'Subscribe Now' : 'Pay with Crypto'}
-            </Text>
+          {currentEntitlements && (
+            <View style={styles.currentSubscription}>
+              <Text style={styles.currentSubscriptionText}>
+                Current Plan: {SUBSCRIPTION_PLANS[currentEntitlements.tier].name}
+                ({currentEntitlements.paymentMethod === 'traditional' ? 'Traditional' : 'Crypto'})
+              </Text>
+            </View>
           )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.restoreButton}
-          onPress={handleRestorePurchases}
-          disabled={isLoading}
-        >
-          <Text style={styles.restoreButtonText}>Restore Purchases</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
 
-      {/* WebView Modal for Transak */}
-      {renderWebViewModal()}
-    </ScrollView>
+        {/* Duration Selection */}
+        <View style={[styles.durationSelector, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+          <TouchableOpacity
+            style={[
+              styles.durationButton,
+              selectedDuration === 'monthly' && styles.selectedDuration,
+            ]}
+            onPress={() => setSelectedDuration('monthly')}
+          >
+            <Text style={[
+              styles.durationText,
+              selectedDuration === 'monthly' && styles.selectedDurationText,
+              { color: Colors[colorScheme ?? 'light'].text }
+            ]}>
+              Monthly
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.durationButton,
+              selectedDuration === 'yearly' && styles.selectedDuration
+            ]}
+            onPress={() => setSelectedDuration('yearly')}
+          >
+            <Text style={[
+              styles.durationText,
+              selectedDuration === 'yearly' && styles.selectedDurationText,
+              { color: Colors[colorScheme ?? 'light'].text }
+            ]}>
+              Yearly (Save 20%)
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Plans */}
+        <View style={styles.plansContainer}>
+          {Object.keys(SUBSCRIPTION_PLANS).map((tier) =>
+            renderSubscriptionPlan(tier as SubscriptionTier)
+          )}
+        </View>
+
+        {/* Payment Method Selection */}
+        <View style={styles.paymentMethodContainer}>
+          <Text style={styles.sectionTitle}>Choose Payment Method</Text>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentMethodButton,
+              paymentMethod === 'traditional' && styles.selectedPaymentMethod
+            ]}
+            onPress={() => setPaymentMethod('traditional')}
+          >
+            <MaterialIcons name="credit-card" size={24} color="#007AFF" />
+            <Text style={styles.paymentMethodText}>Traditional Payment</Text>
+            <Text style={styles.paymentMethodSubtext}>Credit Card, Apple Pay, Google Pay</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.paymentMethodButton,
+              paymentMethod === 'crypto' && styles.selectedPaymentMethod
+            ]}
+            onPress={() => {
+              setPaymentMethod('crypto');
+              // router.push('/transak');
+            }}
+          >
+            <MaterialIcons name="account-balance-wallet" size={24} color="#FF9500" />
+            <Text style={styles.paymentMethodText}>Crypto Payment</Text>
+            <Text style={styles.paymentMethodSubtext}>AVAX on Avalanche Network</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={[styles.purchaseButton, isLoading && styles.disabledButton]}
+            onPress={paymentMethod === 'traditional' ? handleTraditionalPurchase : handleCryptoPurchase}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.purchaseButtonText}>
+                {paymentMethod === 'traditional' ? 'Subscribe Now' : 'Pay with Crypto'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.loadingButton]}
+            onPress={onClose}
+          >
+            <Text style={[styles.loadingButtonText, { color: Colors[colorScheme ?? 'light'].text, backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.restoreButton}
+            onPress={handleRestorePurchases}
+            disabled={isLoading}
+          >
+            <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* WebView Modal for Transak */}
+        {renderWebViewModal()}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa'
   },
   header: {
     padding: 20,
@@ -393,7 +462,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 8
   },
   subtitle: {
@@ -416,7 +484,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 20,
     marginBottom: 20,
-    backgroundColor: '#e0e0e0',
     borderRadius: 8,
     padding: 4
   },
@@ -432,7 +499,7 @@ const styles = StyleSheet.create({
   durationText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666'
+
   },
   selectedDurationText: {
     color: '#fff'
@@ -442,7 +509,6 @@ const styles = StyleSheet.create({
     marginBottom: 20
   },
   planCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -465,7 +531,6 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#1a1a1a'
   },
   currentBadge: {
     backgroundColor: '#4CAF50',
@@ -509,7 +574,6 @@ const styles = StyleSheet.create({
   featureText: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#333',
     flex: 1
   },
   paymentMethodContainer: {
@@ -558,6 +622,18 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 16
+  },
+  loadingButton: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)'
+  },
+  loadingButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold'
   },
   disabledButton: {
     opacity: 0.6

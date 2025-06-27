@@ -1,3 +1,4 @@
+import { Environments } from '@transak/react-native-sdk';
 import { Platform } from 'react-native';
 
 // Environment detection
@@ -23,7 +24,7 @@ export const REVENUECAT_CONFIG = {
 // Transak Crypto Payment Configuration
 export const TRANSAK_CONFIG = {
   apiKey: process.env.EXPO_PUBLIC_TRANSAK_API_KEY || '',
-  environment: IS_DEV ? 'STAGING' : 'PRODUCTION',
+  environment: IS_DEV ? Environments.STAGING : Environments.PRODUCTION,
   hostURL: IS_DEV ? 'https://staging-global.transak.com' : 'https://global.transak.com',
   widgetHeight: '650px',
   widgetWidth: '500px',
@@ -151,16 +152,16 @@ export const BACKEND_CONFIG = {
     // RevenueCat integration
     validatePurchase: '/api/payments/validate-revenuecat',
     syncSubscription: '/api/payments/sync-subscription',
-    
+
     // Crypto payment integration
     initiateCryptoPayment: '/api/payments/crypto/initiate',
     validateCryptoPayment: '/api/payments/crypto/validate',
     processCryptoPayment: '/api/payments/crypto/process',
-    
+
     // Entitlements
     getUserEntitlements: '/api/users/entitlements',
     updateEntitlements: '/api/users/entitlements/update',
-    
+
     // Webhooks (for backend)
     revenuecatWebhook: '/api/webhooks/revenuecat',
     transakWebhook: '/api/webhooks/transak'
@@ -208,7 +209,7 @@ export const FEATURE_FLAGS = {
 // Get current platform configuration
 export const getCurrentPlatformConfig = () => {
   const platform = Platform.OS;
-  
+
   return {
     revenuecat: {
       apiKey: platform === 'ios' ? REVENUECAT_CONFIG.ios.apiKey : REVENUECAT_CONFIG.android.apiKey,
@@ -223,23 +224,23 @@ export const getCurrentPlatformConfig = () => {
 export const validateConfig = () => {
   const platform = Platform.OS;
   const errors: string[] = [];
-  
+
   // Check RevenueCat configuration
   const rcApiKey = platform === 'ios' ? REVENUECAT_CONFIG.ios.apiKey : REVENUECAT_CONFIG.android.apiKey;
   if (!rcApiKey) {
     errors.push(`RevenueCat API key missing for ${platform}`);
   }
-  
+
   // Check Transak configuration
   if (!TRANSAK_CONFIG.apiKey) {
     errors.push('Transak API key missing');
   }
-  
+
   // Check backend configuration
   if (!BACKEND_CONFIG.baseUrl) {
     errors.push('Backend URL missing');
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors
