@@ -1,11 +1,11 @@
 {
   "agentIds": {
-    "orchestrator": "your_orchestrator_agent_id_here",
-    "flight_booking": "your_flight_booking_agent_id_here",
-    "hotel_booking": "your_hotel_booking_agent_id_here",
-    "local_experience": "your_local_experience_agent_id_here",
-    "emergency_assistance": "your_emergency_assistance_agent_id_here",
-    "weather_safety": "your_weather_safety_agent_id_here"
+    "orchestrator": "agent_01jyp6rh49e86acqze2qm2yxne",
+    "flight_booking": "agent_01jyp6xhe7exhreyhrdkhwe3pk",
+    "hotel_booking": "agent_01jyp8zjc3e5wseq5wk6h14sbg",
+    "local_experience": "agent_01jyp820vyfbybe5xvzq2z0vxh",
+    "emergency_assistance": "agent_01jyp8r3egehhagn74jz3k3t9z",
+    "weather_safety": "agent_01jyp8vzyee82rmgrf0akgrt96"
   },
   "created": "2025-06-26T12:19:16.403Z",
   "instructions": "Replace agent IDs with actual IDs from ElevenLabs dashboard"
