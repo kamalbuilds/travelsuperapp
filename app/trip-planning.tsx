@@ -1,34 +1,42 @@
+import { Audio } from 'expo-av';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
-  Mic,
-  MapPin,
   Calendar,
-  Users,
   DollarSign,
-  Plane,
-  Hotel,
-  Camera,
-  Utensils,
+  MapPin,
+  Mic,
   Send,
+  Users
 } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ConversationalAIDOMComponent from '@/components/ConversationalAI';
 import { Colors } from '@/constants/Colors';
+import { AGENT_IDS, isElevenLabsConfigured, SETUP_INSTRUCTIONS } from '@/constants/ElevenLabsConfig';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 const { width } = Dimensions.get('window');
+
+interface Message {
+  id: number;
+  type: 'user' | 'ai';
+  message: string;
+  timestamp: string;
+}
 
 const suggestions = [
   'Plan a romantic getaway to Paris',
@@ -39,24 +47,79 @@ const suggestions = [
   'Safari in Kenya',
 ];
 
-const aiResponses = [
+const aiResponses: Message[] = [
   {
     id: 1,
-    type: 'ai',
-    message: "Hi! I'm your AI travel assistant. I'd love to help you plan the perfect trip! Where would you like to go?",
+    type: 'ai' as const,
+    message: "Hi! I'm Sofia, your travel assistant. I'd love to help you plan the perfect trip! Where would you like to go?",
     timestamp: '2:30 PM',
   },
 ];
 
 export default function TripPlanningScreen() {
   const colorScheme = useColorScheme();
-  const [messages, setMessages] = useState(aiResponses);
+  const [messages, setMessages] = useState<Message[]>(aiResponses);
   const [inputText, setInputText] = useState('');
-  const [isListening, setIsListening] = useState(false);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isAIConnected, setIsAIConnected] = useState(false);
+  
+  // Permission state - only microphone needed for voice AI
+  const [microphonePermission, setMicrophonePermission] = useState<string | null>(null);
+
+  // Get ElevenLabs Agent ID from configuration
+  const AGENT_ID = AGENT_IDS.SOFIA;
+  const isConfigured = isElevenLabsConfigured();
+
+  // Permission request function - only for microphone
+  const requestMicrophonePermission = async () => {
+    try {
+      console.log('🎤 Requesting microphone permission...');
+      
+      const { status: audioStatus } = await Audio.requestPermissionsAsync();
+      
+      console.log("🎤 audioStatus:", audioStatus);
+      
+      setMicrophonePermission(audioStatus);
+      
+      if (audioStatus !== 'granted') {
+        console.log('❌ Microphone permission denied:', audioStatus);
+        Alert.alert(
+          'Microphone Permission Required', 
+          'Please allow microphone access to use voice AI features for travel planning',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => console.log('Should open app settings') }
+          ]
+        );
+        return false;
+      }
+      
+      console.log('✅ Microphone permission granted!');
+      return true;
+    } catch (error) {
+      console.error('💥 Error requesting microphone permission:', error);
+      Alert.alert('Error', 'Failed to request microphone permission. Please try again.');
+      return false;
+    }
+  };
+
+  // Check permissions on component mount
+  useEffect(() => {
+    const checkPermissions = async () => {
+      if (Platform.select({ web: false, default: true })) {
+        const { status: audioStatus } = await Audio.getPermissionsAsync();
+        
+        console.log('📋 Initial microphone permission:', audioStatus);
+        setMicrophonePermission(audioStatus);
+      }
+    };
+    
+    checkPermissions();
+  }, []);
 
   const handleSendMessage = () => {
     if (inputText.trim()) {
-      const newMessage = {
+      const newMessage: Message = {
         id: messages.length + 1,
         type: 'user',
         message: inputText,
@@ -66,16 +129,20 @@ export default function TripPlanningScreen() {
       setMessages([...messages, newMessage]);
       setInputText('');
 
-      // Simulate AI response
-      setTimeout(() => {
-        const aiResponse = {
-          id: messages.length + 2,
-          type: 'ai',
-          message: "Great choice! I can help you plan an amazing trip. Let me suggest some activities and accommodations. What's your budget range?",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessages(prev => [...prev, aiResponse]);
-      }, 1000);
+      // Only add mock response if not connected to AI voice
+      if (!isAIConnected) {
+        setTimeout(() => {
+          const aiResponse: Message = {
+            id: messages.length + 2,
+            type: 'ai',
+            message: isConfigured 
+              ? "Great choice! I can help you plan an amazing trip. Try using the voice button for a more natural conversation with our AI assistant!"
+              : "Great choice! I can help you plan an amazing trip. Voice AI requires ElevenLabs configuration - check the setup instructions in the console.",
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+          setMessages(prev => [...prev, aiResponse]);
+        }, 1000);
+      }
     }
   };
 
@@ -83,8 +150,99 @@ export default function TripPlanningScreen() {
     setInputText(suggestion);
   };
 
-  const handleVoicePress = () => {
-    setIsListening(!isListening);
+  const handleVoiceModeToggle = async () => {
+    console.log('🎤 Voice Mode Toggle Pressed');
+    console.log('📋 Is Configured:', isConfigured);
+    console.log('🆔 Agent ID:', AGENT_ID);
+    console.log('🔑 Has API Key:', !!process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY);
+    console.log('🎤 Microphone Permission:', microphonePermission);
+    
+    if (!isConfigured) {
+      console.log('❌ ElevenLabs Setup Instructions:', SETUP_INSTRUCTIONS.steps);
+      Alert.alert('Configuration Required', 'ElevenLabs configuration required. Check console for setup instructions.');
+      return;
+    }
+
+    // If turning on voice mode, check/request permissions first
+    if (!isVoiceMode) {
+      console.log('🔐 Voice mode activation - checking microphone permission...');
+      
+      if (Platform.select({ web: false, default: true })) {
+        // Check if we already have microphone permission
+        if (microphonePermission !== 'granted') {
+          console.log('⚠️ Microphone permission not granted, requesting...');
+          const permissionGranted = await requestMicrophonePermission();
+          
+          if (!permissionGranted) {
+            console.log('❌ Microphone permission denied, cannot enable voice mode');
+            return;
+          }
+        } else {
+          console.log('✅ Microphone permission already granted');
+        }
+      }
+    }
+    
+    console.log('✅ Toggling voice mode from', isVoiceMode, 'to', !isVoiceMode);
+    setIsVoiceMode(!isVoiceMode);
+  };
+
+  const handleAIMessage = (message: any) => {
+    console.log('Received AI message:', message);
+    
+    // Convert ElevenLabs message to our chat format
+    if (message.type === 'agent_response' || message.content) {
+      const aiMessage: Message = {
+        id: messages.length + 1,
+        type: 'ai',
+        message: message.content || message.text || 'AI response received',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    }
+  };
+
+  const handleAIConnect = () => {
+    console.log('🎉 AI Assistant connected successfully!');
+    console.log('🔄 Setting isAIConnected to true');
+    setIsAIConnected(true);
+    
+    const connectMessage: Message = {
+      id: messages.length + 1,
+      type: 'ai',
+      message: "🎤 Voice AI connected! You can now speak naturally with me about your travel plans.",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages(prev => [...prev, connectMessage]);
+  };
+
+  const handleAIDisconnect = () => {
+    console.log('👋 AI Assistant disconnected');
+    console.log('🔄 Setting isAIConnected to false');
+    setIsAIConnected(false);
+    
+    const disconnectMessage: Message = {
+      id: messages.length + 1,
+      type: 'ai',
+      message: "Voice AI disconnected. You can reconnect anytime or continue with text chat.",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages(prev => [...prev, disconnectMessage]);
+  };
+
+  const handleAIError = (error: Error) => {
+    console.error('💥 AI Assistant error occurred:', error);
+    console.error('🔍 Error name:', error.name);
+    console.error('🔍 Error message:', error.message);
+    console.error('🔍 Error stack:', error.stack);
+    
+    const errorMessage: Message = {
+      id: messages.length + 1,
+      type: 'ai',
+      message: `Sorry, I encountered an issue with voice AI: ${error.message}. Please try again or use text chat.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages(prev => [...prev, errorMessage]);
   };
 
   return (
@@ -99,7 +257,6 @@ export default function TripPlanningScreen() {
         </Text>
         <View style={styles.headerRight} />
       </View>
-
 
       {/* Chat Messages */}
       <ScrollView style={styles.chatContainer} showsVerticalScrollIndicator={false}>
@@ -209,17 +366,58 @@ export default function TripPlanningScreen() {
         </View>
       </ScrollView>
 
+      {/* Voice AI Component - Show when in voice mode */}
+      {isVoiceMode  && (
+        <View style={styles.voiceAIContainer}>
+          <ConversationalAIDOMComponent
+            dom={{ style: styles.voiceAIComponent }}
+            agentId={AGENT_ID}
+            onMessage={handleAIMessage}
+            onConnect={handleAIConnect}
+            onDisconnect={handleAIDisconnect}
+            onError={handleAIError}
+          />
+        </View>
+      )}
+
       {/* Input Area */}
       <View style={[styles.inputContainer, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        {/* Voice Mode Toggle */}
+        {Platform.select({ web: false, default: true }) && (
+          <View style={styles.voiceModeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.voiceModeToggle,
+                isVoiceMode && styles.voiceModeToggleActive,
+              ]}
+              onPress={handleVoiceModeToggle}
+            >
+              <Text style={[
+                styles.voiceModeText,
+                { color: isVoiceMode ? '#fff' : Colors[colorScheme ?? 'light'].text }
+              ]}>
+                {isVoiceMode ? '🎤 Voice AI Active' : '💬 Text Mode'}
+              </Text>
+              {/* Microphone Permission indicator */}
+              <View style={styles.permissionIndicators}>
+                <Text style={[styles.permissionText, { color: microphonePermission === 'granted' ? '#10B981' : '#EF4444' }]}>
+                  🎤 Microphone: {microphonePermission || 'unknown'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.inputRow}>
           <TouchableOpacity
             style={[
               styles.voiceButton,
-              isListening && styles.voiceButtonActive,
+              (isVoiceMode && isAIConnected) && styles.voiceButtonActive,
             ]}
-            onPress={handleVoicePress}
+            onPress={Platform.select({ web: undefined, default: handleVoiceModeToggle })}
+            disabled={Platform.select({ web: true, default: false })}
           >
-            <Mic size={20} color={isListening ? '#fff' : Colors[colorScheme ?? 'light'].tint} />
+            <Mic size={20} color={(isVoiceMode && isAIConnected) ? '#fff' : Colors[colorScheme ?? 'light'].tint} />
           </TouchableOpacity>
           <TextInput
             style={[
@@ -230,24 +428,31 @@ export default function TripPlanningScreen() {
                 borderColor: Colors[colorScheme ?? 'light'].tabIconDefault + '30',
               }
             ]}
-            placeholder="Ask me anything about your trip..."
+            placeholder={isVoiceMode ? "Voice mode active - speak to the AI above" : "Ask me anything about your trip..."}
             placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
             value={inputText}
             onChangeText={setInputText}
             multiline
             maxLength={500}
+            editable={!isVoiceMode}
           />
           <TouchableOpacity
             style={[
               styles.sendButton,
-              inputText.trim() && styles.sendButtonActive,
+              inputText.trim() && !isVoiceMode && styles.sendButtonActive,
             ]}
             onPress={handleSendMessage}
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || isVoiceMode}
           >
-            <Send size={20} color={inputText.trim() ? '#fff' : Colors[colorScheme ?? 'light'].tabIconDefault} />
+            <Send size={20} color={inputText.trim() && !isVoiceMode ? '#fff' : Colors[colorScheme ?? 'light'].tabIconDefault} />
           </TouchableOpacity>
         </View>
+
+        {Platform.select({ web: true, default: false }) && (
+          <Text style={[styles.webOnlyNote, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+            Voice AI is available on mobile platforms (iOS & Android)
+          </Text>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -444,5 +649,60 @@ const styles = StyleSheet.create({
   },
   sendButtonActive: {
     backgroundColor: '#667eea',
+  },
+  voiceAIContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  voiceAIComponent: {
+    width: '80%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+  },
+  voiceModeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  voiceModeToggle: {
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#667eea',
+    borderRadius: 12,
+    flex: 1,
+  },
+  voiceModeToggleActive: {
+    backgroundColor: '#667eea',
+  },
+  voiceModeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  permissionIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  permissionText: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  webOnlyNote: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 12,
   },
 });

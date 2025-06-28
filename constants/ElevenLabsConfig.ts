@@ -158,3 +158,105 @@ export type AgentId = keyof typeof AGENT_PROFILES;
 export type MessageType = typeof MESSAGE_TYPES[keyof typeof MESSAGE_TYPES];
 export type StatusType = typeof STATUS_TYPES[keyof typeof STATUS_TYPES]; 
 export type ModeType = typeof MODE_TYPES[keyof typeof MODE_TYPES]; 
+
+// ElevenLabs Configuration for Travel Super App
+
+export const ELEVENLABS_CONFIG = {
+  // Your ElevenLabs API Key (add to .env file)
+  API_KEY: process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY || '',
+  
+  // Travel Agent ID (replace with your agent ID from ElevenLabs dashboard)
+  TRAVEL_AGENT_ID: process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID || 'your-travel-agent-id-here',
+  
+  // Agent Configuration for Travel Planning
+  AGENT_CONFIG: {
+    name: 'Travel Assistant',
+    voice: 'Sofia', // You can change to other ElevenLabs voices
+    
+    // First message shown when connected
+    firstMessage: 'Hi there! I\'m your AI travel assistant. I can help you plan amazing trips, find destinations, book accommodations, and answer all your travel questions. What adventure are you planning?',
+    
+    // System prompt for the travel agent
+    systemPrompt: `You are a professional travel assistant AI. You help users plan trips, find destinations, suggest activities, and provide travel advice. 
+
+Key capabilities:
+- Trip planning and itinerary creation
+- Destination recommendations based on preferences
+- Budget planning and cost estimation  
+- Travel booking assistance
+- Local culture and customs information
+- Weather and best time to visit advice
+- Transportation options and routing
+- Accommodation suggestions
+- Activity and attraction recommendations
+- Travel safety and health tips
+
+Always be helpful, enthusiastic, and provide practical, actionable advice. Ask clarifying questions to better understand the user's preferences, budget, and travel style.`,
+
+    // Dynamic variables that can be used in prompts
+    variables: {
+      platform: 'mobile', // Will be set based on Platform.OS (ios/android/web)
+      userPreferences: '',
+      currentLocation: '',
+      travelDates: '',
+      budget: '',
+      travelers: ''
+    }
+  },
+
+  // Voice settings
+  VOICE_SETTINGS: {
+    stability: 0.5,
+    similarityBoost: 0.75,
+    volume: 0.8
+  },
+
+  // Conversation settings
+  CONVERSATION_SETTINGS: {
+    autoStart: false,
+    showTranscript: true,
+    enableVolumeControl: true,
+    maxSessionDuration: 30 * 60 * 1000, // 30 minutes
+  }
+};
+
+// Helper function to get platform-specific agent ID
+export const getTravelAgentId = (): string => {
+  return ELEVENLABS_CONFIG.TRAVEL_AGENT_ID;
+};
+
+// Helper function to check if ElevenLabs is properly configured
+export const isElevenLabsConfigured = (): boolean => {
+  return !!( ELEVENLABS_CONFIG.TRAVEL_AGENT_ID && ELEVENLABS_CONFIG.TRAVEL_AGENT_ID !== 'your-travel-agent-id-here');
+};
+
+// Environment setup instructions
+export const SETUP_INSTRUCTIONS = {
+  steps: [
+    '1. Create an ElevenLabs account at https://elevenlabs.io',
+    '2. Get your API key from the ElevenLabs dashboard',
+    '3. Create a new Conversational AI agent for travel assistance',
+    '4. Copy your agent ID from the agent settings',
+    '5. Add these environment variables to your .env file:',
+    '   EXPO_PUBLIC_ELEVENLABS_API_KEY=your_api_key_here',
+    '   EXPO_PUBLIC_ELEVENLABS_AGENT_ID=your_agent_id_here',
+    '6. Configure your agent with travel-specific prompts and tools',
+    '7. Test the integration on mobile platforms (iOS/Android) or web'
+  ],
+  
+  agentSetup: {
+    systemPrompt: ELEVENLABS_CONFIG.AGENT_CONFIG.systemPrompt,
+    firstMessage: ELEVENLABS_CONFIG.AGENT_CONFIG.firstMessage,
+    voice: ELEVENLABS_CONFIG.AGENT_CONFIG.voice,
+    tools: [
+      'get_weather - Get weather information for destinations',
+      'find_flights - Search for flight options',
+      'hotel_search - Find accommodation options',
+      'activity_search - Discover local activities and attractions',
+      'currency_convert - Convert currencies for budget planning',
+      'travel_safety - Get safety information for destinations'
+    ]
+  }
+};
+
+export default ELEVENLABS_CONFIG; 
