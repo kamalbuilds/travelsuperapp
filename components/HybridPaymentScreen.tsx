@@ -605,4 +605,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default HybridPaymentScreen; 
+export default HybridPaymentScreen;

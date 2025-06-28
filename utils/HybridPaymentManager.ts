@@ -603,4 +603,5 @@ export class HybridPaymentManager {
 }
 
 // Export singleton instance
-export const paymentManager = HybridPaymentManager.getInstance(); 
+export const paymentManager = HybridPaymentManager.getInstance();
+
