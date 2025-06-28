@@ -122,12 +122,6 @@ export default function ProfileScreen() {
       ),
     },
     {
-      icon: Video,
-      title: 'Video Consultations',
-      subtitle: 'AI video agent preferences',
-      onPress: () => console.log('Video Consultations'),
-    },
-    {
       icon: Shield,
       title: 'Security & Privacy',
       subtitle: 'Biometrics, passwords, and privacy',

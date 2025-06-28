@@ -36,7 +36,7 @@ const onboardingSteps = [
     id: 4,
     title: 'Premium AI Features',
     subtitle: '24/7 travel concierge service',
-    description: 'Upgrade for unlimited AI conversations, video consultations, and priority support',
+    description: 'Upgrade for unlimited AI conversations and priority support',
     icon: Shield,
     gradient: ['#43e97b', '#38f9d7'],
   },
