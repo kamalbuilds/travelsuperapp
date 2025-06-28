@@ -310,6 +310,8 @@ export class HybridPaymentManager {
         walletAddress
       );
 
+      console.log("paymentInitiation", paymentInitiation);
+
       // Launch Transak widget
       const transakResult = await this.launchTransakWidget({
         cryptoAmount: cryptoPrice.price,
@@ -337,6 +339,7 @@ export class HybridPaymentManager {
       }
 
     } catch (error) {
+      console.log("transak api key payment manager", process.env.EXPO_PUBLIC_TRANSAK_API_KEY);
       console.error('❌ Crypto purchase failed:', error);
       const result: PaymentResult = {
         success: false,

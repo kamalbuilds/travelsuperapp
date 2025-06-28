@@ -100,6 +100,7 @@ export default function TripPlanningScreen() {
         <View style={styles.headerRight} />
       </View>
 
+
       {/* Chat Messages */}
       <ScrollView style={styles.chatContainer} showsVerticalScrollIndicator={false}>
         {messages.map((message) => (

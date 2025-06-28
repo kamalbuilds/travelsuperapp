@@ -142,6 +142,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
       await paymentManager.purchaseWithCrypto(selectedTier, selectedDuration);
     } catch (error) {
       setIsLoading(false);
+      console.log("transak api key", process.env.EXPO_PUBLIC_TRANSAK_API_KEY);
       console.error('Crypto purchase failed:', error);
       Alert.alert('Purchase Failed', 'Unable to complete crypto payment');
     }

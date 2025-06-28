@@ -212,6 +212,7 @@ export class CryptoPaymentProvider implements PaymentProvider {
       
       return false;
     } catch (error) {
+      console.log("transak api key payment system payment provider", process.env.EXPO_PUBLIC_TRANSAK_API_KEY);
       console.error('Crypto purchase failed:', error);
       return false;
     }
