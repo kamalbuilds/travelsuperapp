@@ -1,4 +1,3 @@
-import { Audio } from 'expo-av';
 import { router } from 'expo-router';
 import {
   ArrowLeft,
@@ -9,7 +8,7 @@ import {
   Send,
   Users
 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -62,60 +61,11 @@ export default function TripPlanningScreen() {
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isAIConnected, setIsAIConnected] = useState(false);
-  
-  // Permission state - only microphone needed for voice AI
-  const [microphonePermission, setMicrophonePermission] = useState<string | null>(null);
 
+  console.log("🎤 platform:", Platform);
   // Get ElevenLabs Agent ID from configuration
   const AGENT_ID = AGENT_IDS.SOFIA;
   const isConfigured = isElevenLabsConfigured();
-
-  // Permission request function - only for microphone
-  const requestMicrophonePermission = async () => {
-    try {
-      console.log('🎤 Requesting microphone permission...');
-      
-      const { status: audioStatus } = await Audio.requestPermissionsAsync();
-      
-      console.log("🎤 audioStatus:", audioStatus);
-      
-      setMicrophonePermission(audioStatus);
-      
-      if (audioStatus !== 'granted') {
-        console.log('❌ Microphone permission denied:', audioStatus);
-        Alert.alert(
-          'Microphone Permission Required', 
-          'Please allow microphone access to use voice AI features for travel planning',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => console.log('Should open app settings') }
-          ]
-        );
-        return false;
-      }
-      
-      console.log('✅ Microphone permission granted!');
-      return true;
-    } catch (error) {
-      console.error('💥 Error requesting microphone permission:', error);
-      Alert.alert('Error', 'Failed to request microphone permission. Please try again.');
-      return false;
-    }
-  };
-
-  // Check permissions on component mount
-  useEffect(() => {
-    const checkPermissions = async () => {
-      if (Platform.select({ web: false, default: true })) {
-        const { status: audioStatus } = await Audio.getPermissionsAsync();
-        
-        console.log('📋 Initial microphone permission:', audioStatus);
-        setMicrophonePermission(audioStatus);
-      }
-    };
-    
-    checkPermissions();
-  }, []);
 
   const handleSendMessage = () => {
     if (inputText.trim()) {
@@ -155,7 +105,6 @@ export default function TripPlanningScreen() {
     console.log('📋 Is Configured:', isConfigured);
     console.log('🆔 Agent ID:', AGENT_ID);
     console.log('🔑 Has API Key:', !!process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY);
-    console.log('🎤 Microphone Permission:', microphonePermission);
     
     if (!isConfigured) {
       console.log('❌ ElevenLabs Setup Instructions:', SETUP_INSTRUCTIONS.steps);
@@ -163,26 +112,7 @@ export default function TripPlanningScreen() {
       return;
     }
 
-    // If turning on voice mode, check/request permissions first
-    if (!isVoiceMode) {
-      console.log('🔐 Voice mode activation - checking microphone permission...');
-      
-      if (Platform.select({ web: false, default: true })) {
-        // Check if we already have microphone permission
-        if (microphonePermission !== 'granted') {
-          console.log('⚠️ Microphone permission not granted, requesting...');
-          const permissionGranted = await requestMicrophonePermission();
-          
-          if (!permissionGranted) {
-            console.log('❌ Microphone permission denied, cannot enable voice mode');
-            return;
-          }
-        } else {
-          console.log('✅ Microphone permission already granted');
-        }
-      }
-    }
-    
+    // Simply toggle voice mode - the DOM component will handle microphone permissions
     console.log('✅ Toggling voice mode from', isVoiceMode, 'to', !isVoiceMode);
     setIsVoiceMode(!isVoiceMode);
   };
@@ -368,16 +298,19 @@ export default function TripPlanningScreen() {
 
       {/* Voice AI Component - Show when in voice mode */}
       {isVoiceMode  && (
-        <View style={styles.voiceAIContainer}>
-          <ConversationalAIDOMComponent
-            dom={{ style: styles.voiceAIComponent }}
-            agentId={AGENT_ID}
-            onMessage={handleAIMessage}
-            onConnect={handleAIConnect}
-            onDisconnect={handleAIDisconnect}
-            onError={handleAIError}
-          />
-        </View>
+                <View style={styles.domComponentContainer}>
+                <ConversationalAIDOMComponent
+                  dom={{ style: styles.domComponent }}
+                  platform={Platform.OS}
+                  get_battery_level={() => 100}
+                  change_brightness={() => {}}
+                  flash_screen={() => {}}
+                  onMessage={(message) => {
+                    console.log("🔍 Parent received message:", message);
+                    setMessages(prev => [...prev, message as unknown as Message]);
+                  }}
+                />
+              </View>
       )}
 
       {/* Input Area */}
@@ -398,12 +331,6 @@ export default function TripPlanningScreen() {
               ]}>
                 {isVoiceMode ? '🎤 Voice AI Active' : '💬 Text Mode'}
               </Text>
-              {/* Microphone Permission indicator */}
-              <View style={styles.permissionIndicators}>
-                <Text style={[styles.permissionText, { color: microphonePermission === 'granted' ? '#10B981' : '#EF4444' }]}>
-                  🎤 Microphone: {microphonePermission || 'unknown'}
-                </Text>
-              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -462,6 +389,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  domComponentContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  domComponent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+  },
+  chatContainer: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  messagesList: {
+    flex: 1,
+  },
+  messagesContent: {
+    paddingVertical: 16,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -480,10 +434,6 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     width: 32,
-  },
-  chatContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
   },
   messageContainer: {
     flexDirection: 'row',
@@ -687,18 +637,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
-  },
-  permissionIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  permissionText: {
-    fontSize: 10,
-    fontWeight: '500',
   },
   webOnlyNote: {
     fontSize: 12,
