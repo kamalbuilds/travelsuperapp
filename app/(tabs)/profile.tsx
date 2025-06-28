@@ -1,33 +1,87 @@
-import { useState } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import { Bell, ChevronRight, CreditCard, Crown, CreditCard as Edit, Globe, LogOut, Mic, Settings, Shield, Video } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Switch,
   Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Settings, Bell, Shield, CreditCard, Globe, Mic, Video, Crown, LogOut, ChevronRight, CreditCard as Edit } from 'lucide-react-native';
 
+import HybridPaymentScreen from '@/components/HybridPaymentScreen';
 import { Colors } from '@/constants/Colors';
+import { SUBSCRIPTION_PLANS, SubscriptionTier } from '@/constants/PaymentConfig';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { paymentManager, UserEntitlements } from '@/utils/HybridPaymentManager';
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+  const [userEntitlements, setUserEntitlements] = useState<UserEntitlements | null>(null);
+  const [showPaymentScreen, setShowPaymentScreen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+
+    // Set up payment event listeners
+    paymentManager.onEntitlementsUpdated((entitlements) => {
+      setUserEntitlements(entitlements);
+    });
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+      const entitlements = await paymentManager.checkSubscriptionStatus();
+      setUserEntitlements(entitlements);
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleUpgrade = () => {
+    setShowPaymentScreen(true);
+  };
+
+  const handleUpgradeSubscription = () => {
+    setShowPaymentScreen(true);
+  };
+
+  const handleManageSubscription = () => {
     Alert.alert(
-      'Upgrade to TravelPro',
-      'Get unlimited AI conversations, video consultations, and premium features for $9.99/month',
+      'Manage Subscription',
+      'What would you like to do?',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Upgrade Now', onPress: () => console.log('Upgrade pressed') },
+        {
+          text: 'Upgrade Plan',
+          onPress: () => setShowPaymentScreen(true)
+        },
+        {
+          text: 'Restore Purchases',
+          onPress: async () => {
+            const success = await paymentManager.restorePurchases();
+            if (success) {
+              Alert.alert('Success', 'Purchases restored successfully');
+              await loadUserData();
+            } else {
+              Alert.alert('Error', 'Failed to restore purchases');
+            }
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
       ]
     );
   };
@@ -101,18 +155,144 @@ export default function ProfileScreen() {
     },
   ];
 
+  const renderSubscriptionStatus = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.subscriptionCard}>
+          <View style={styles.cardHeader}>
+            <MaterialIcons name="star-border" size={24} color="#FF9500" />
+            <Text style={styles.cardTitle}>Loading subscription status...</Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (!userEntitlements || !userEntitlements.isActive) {
+      return (
+        <View style={styles.subscriptionCard}>
+          <View style={styles.cardHeader}>
+            <MaterialIcons name="star-border" size={24} color="#FF9500" />
+            <Text style={styles.cardTitle}>No Active Subscription</Text>
+          </View>
+          <Text style={styles.cardDescription}>
+            Upgrade to unlock premium travel features
+          </Text>
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={handleUpgradeSubscription}
+          >
+            <Text style={styles.upgradeButtonText}>Choose Plan</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const plan = SUBSCRIPTION_PLANS[userEntitlements.tier];
+
+    return (
+      <View style={styles.subscriptionCard}>
+        <View style={styles.cardHeader}>
+          <MaterialIcons
+            name={userEntitlements.tier === SubscriptionTier.VIP ? "star" : "star-half"}
+            size={24}
+            color="#4CAF50"
+          />
+          <Text style={styles.cardTitle}>{plan.name}</Text>
+          <View style={styles.activeBadge}>
+            <Text style={styles.activeBadgeText}>ACTIVE</Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardDescription}>{plan.description}</Text>
+
+        <View style={styles.paymentMethodContainer}>
+          <MaterialIcons
+            name={userEntitlements.paymentMethod === 'traditional' ? "credit-card" : "account-balance-wallet"}
+            size={16}
+            color="#666"
+          />
+          <Text style={styles.paymentMethodText}>
+            {userEntitlements.paymentMethod === 'traditional' ? 'Traditional Payment' : 'Crypto Payment'}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.manageButton}
+          onPress={handleManageSubscription}
+        >
+          <Text style={styles.manageButtonText}>Manage Subscription</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderFeatureAccess = () => {
+    if (!userEntitlements || !userEntitlements.isActive) {
+      return null;
+    }
+
+    const features = userEntitlements.features;
+
+    return (
+      <View style={styles.featuresCard}>
+        <Text style={styles.cardTitle}>Your Features</Text>
+
+        {Object.entries(features).map(([feature, value]) => {
+          if (value === false) return null;
+
+          return (
+            <View key={feature} style={styles.featureItem}>
+              <MaterialIcons
+                name="check-circle"
+                size={20}
+                color="#4CAF50"
+              />
+              <Text style={styles.featureText}>
+                {feature.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </Text>
+              {typeof value === 'string' && (
+                <Text style={styles.featureLevel}>({value})</Text>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  if (showPaymentScreen) {
+    return (
+      <HybridPaymentScreen
+        onSuccess={(result) => {
+          setShowPaymentScreen(false);
+          Alert.alert('Success!', `Subscription activated with ${result.paymentMethod} payment`);
+          loadUserData();
+        }}
+        onError={(error) => {
+          setShowPaymentScreen(false);
+          Alert.alert('Error', error);
+        }}
+        onClose={() => setShowPaymentScreen(false)}
+      />
+    );
+  }
+
+  const textColor = Colors[colorScheme ?? 'light'].text;
+  const defaultBgColor = Colors[colorScheme ?? 'light'].background;
+  const defaultIconColor = Colors[colorScheme ?? 'light'].tabIconDefault;
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: defaultBgColor }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+          <Text style={[styles.title, { color: textColor }]}>
             Profile
           </Text>
         </View>
 
         {/* Profile Card */}
-        <View style={[styles.profileCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={[styles.profileCard, { backgroundColor: defaultBgColor }]}>
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
               <Image
@@ -124,10 +304,10 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: Colors[colorScheme ?? 'light'].text }]}>
+              <Text style={[styles.userName, { color: textColor }]}>
                 Sarah Johnson
               </Text>
-              <Text style={[styles.userEmail, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+              <Text style={[styles.userEmail, { color: defaultIconColor }]}>
                 sarah.johnson@email.com
               </Text>
               <View style={styles.membershipBadge}>
@@ -142,24 +322,24 @@ export default function ProfileScreen() {
         </View>
 
         {/* Stats */}
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, { backgroundColor: defaultBgColor }]}>
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: Colors[colorScheme ?? 'light'].text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+            <Text style={[styles.statNumber, { color: textColor }]}>12</Text>
+            <Text style={[styles.statLabel, { color: defaultIconColor }]}>
               Trips Planned
             </Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: Colors[colorScheme ?? 'light'].text }]}>8</Text>
-            <Text style={[styles.statLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+            <Text style={[styles.statNumber, { color: textColor }]}>8</Text>
+            <Text style={[styles.statLabel, { color: defaultIconColor }]}>
               Countries Visited
             </Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: Colors[colorScheme ?? 'light'].text }]}>156</Text>
-            <Text style={[styles.statLabel, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+            <Text style={[styles.statNumber, { color: textColor }]}>156</Text>
+            <Text style={[styles.statLabel, { color: defaultIconColor }]}>
               AI Conversations
             </Text>
           </View>
@@ -172,7 +352,7 @@ export default function ProfileScreen() {
               key={index}
               style={[
                 styles.menuItem,
-                { backgroundColor: Colors[colorScheme ?? 'light'].background }
+                { backgroundColor: defaultBgColor }
               ]}
               onPress={item.onPress}
             >
@@ -181,7 +361,7 @@ export default function ProfileScreen() {
                   <item.icon size={20} color={Colors[colorScheme ?? 'light'].tint} />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  <Text style={[styles.menuItemTitle, { color: textColor }]}>
                     {item.title}
                   </Text>
                   <Text style={[styles.menuItemSubtitle, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
@@ -196,26 +376,16 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Premium Features */}
-        <View style={styles.premiumSection}>
-          <View style={styles.premiumCard}>
-            <View style={styles.premiumHeader}>
-              <Crown size={24} color="#FFD700" />
-              <Text style={styles.premiumTitle}>Unlock Premium Features</Text>
-            </View>
-            <Text style={styles.premiumDescription}>
-              Get unlimited AI conversations, 24/7 video concierge, and exclusive travel deals
-            </Text>
-            <View style={styles.premiumFeatures}>
-              <Text style={styles.premiumFeature}>• Unlimited AI conversations</Text>
-              <Text style={styles.premiumFeature}>• Video travel consultations</Text>
-              <Text style={styles.premiumFeature}>• Priority booking support</Text>
-              <Text style={styles.premiumFeature}>• Advanced blockchain features</Text>
-            </View>
-            <TouchableOpacity style={styles.premiumButton} onPress={handleUpgrade}>
-              <Text style={styles.premiumButtonText}>Start Free Trial</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Subscription Status */}
+        <View style={styles.subscriptionSection}>
+          <Text style={[styles.subscriptionTitle, { color: textColor }]}>Subscription Status</Text>
+          {renderSubscriptionStatus()}
+        </View>
+
+        {/* Feature Access */}
+        <View style={styles.featureAccessSection}>
+          <Text style={[styles.featureAccessTitle, { color: textColor }]}>Feature Access</Text>
+          {renderFeatureAccess()}
         </View>
 
         {/* Logout */}
@@ -319,8 +489,8 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#FFD700',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
   },
   upgradeButtonText: {
     color: '#000',
@@ -331,7 +501,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 20,
     marginBottom: 30,
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -339,6 +508,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)'
   },
   statItem: {
     flex: 1,
@@ -355,7 +526,7 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255,255,255,0.6)',
     marginHorizontal: 16,
   },
   menuSection: {
@@ -399,51 +570,99 @@ const styles = StyleSheet.create({
   menuItemSubtitle: {
     fontSize: 14,
   },
-  premiumSection: {
+  subscriptionSection: {
     marginHorizontal: 20,
     marginBottom: 30,
   },
-  premiumCard: {
-    backgroundColor: '#667eea',
-    padding: 20,
-    borderRadius: 16,
-  },
-  premiumHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  premiumTitle: {
-    color: '#fff',
+  subscriptionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 12,
   },
-  premiumDescription: {
-    color: 'rgba(255, 255, 255, 0.9)',
+  subscriptionCard: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    flex: 1,
+  },
+  activeBadge: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  activeBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  cardDescription: {
     fontSize: 14,
-    lineHeight: 20,
+    color: '#666',
     marginBottom: 16,
   },
-  premiumFeatures: {
-    marginBottom: 20,
+  paymentMethodContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  premiumFeature: {
-    color: 'rgba(255, 255, 255, 0.9)',
+  paymentMethodText: {
     fontSize: 14,
-    marginBottom: 4,
+    color: '#666',
+    marginLeft: 8,
   },
-  premiumButton: {
-    backgroundColor: '#fff',
+  manageButton: {
+    backgroundColor: '#f0f0f0',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
   },
-  premiumButtonText: {
-    color: '#667eea',
+  manageButtonText: {
+    color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  featuresCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginTop: 0,
+    padding: 20,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  featureText: {
+    fontSize: 14,
+    marginLeft: 8,
+    flex: 1,
+  },
+  featureLevel: {
+    fontSize: 12,
+    color: '#666',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -459,6 +678,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)'
   },
   logoutText: {
     color: '#ff4757',
@@ -472,5 +693,14 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
+  },
+  featureAccessSection: {
+    marginHorizontal: 20,
+    marginBottom: 30,
+  },
+  featureAccessTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
 });
