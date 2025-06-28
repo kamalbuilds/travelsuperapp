@@ -65,7 +65,6 @@
     "expo-system-ui": "~5.0.9",
     "expo-web-browser": "~14.2.0",
     "lucide-react-native": "^0.344.0",
-    "netlify-plugin-bun": "^0.0.2",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.4",
