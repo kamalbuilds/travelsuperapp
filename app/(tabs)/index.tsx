@@ -25,8 +25,6 @@ import { type Message } from '@/components/ChatMessage';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-import MultiAgentTravelAI from '@/components/MultiAgentTravelAI';
-
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {

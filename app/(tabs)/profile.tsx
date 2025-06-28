@@ -50,6 +50,14 @@ export default function ProfileScreen() {
   };
 
   const handleUpgrade = () => {
+    setShowPaymentScreen(true);
+  };
+
+  const handleUpgradeSubscription = () => {
+    setShowPaymentScreen(true);
+  };
+
+  const handleManageSubscription = () => {
     Alert.alert(
       'Manage Subscription',
       'What would you like to do?',
