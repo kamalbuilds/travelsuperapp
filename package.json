@@ -46,6 +46,7 @@
     "crypto-js": "^4.1.1",
     "ethers": "^6.7.1",
     "expo": "~53.0.12",
+    "expo-av": "~15.1.6",
     "expo-battery": "~9.0.2",
     "expo-blur": "~14.1.5",
     "expo-brightness": "~13.0.3",
