@@ -8,6 +8,7 @@
     "android": "bunx expo start --android",
     "ios": "bunx expo start --ios",
     "web": "bunx expo start --web",
+    "build": "bunx expo export -p web",
     "lint": "bunx expo lint",
     "clean": "rm -rf node_modules && rm -rf .expo && bun install",
     "travel-agents": "bun run agents/cli/AgentManagerCLI.ts",
@@ -18,6 +19,11 @@
   },
   "bin": {
     "travel-agents": "./agents/cli/AgentManagerCLI.ts"
+  },
+  "packageManager": "bun@1.0.0",
+  "engines": {
+    "bun": ">=1.0.0",
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@11labs/react": "^0.0.7",

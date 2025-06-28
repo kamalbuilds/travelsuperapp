@@ -1,0 +1,26 @@
+[build]
+  publish = "dist"
+  command = "bun run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--version" # This disables npm
+  
+# Use Bun instead of npm
+[[plugins]]
+  package = "netlify-plugin-bun"
+
+[context.production]
+  command = "bun install && bun run build"
+
+[context.deploy-preview]
+  command = "bun install && bun run build"
+
+[context.branch-deploy]
+  command = "bun install && bun run build"
+
+# Redirect all routes to index.html for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
