@@ -30,7 +30,7 @@
     "@avalabs/avalanchejs": "^5.0.0",
     "@burnt-labs/abstraxion-react-native": "^1.0.0-alpha.6",
     "@expo-google-fonts/inter": "^0.4.1",
-    "@expo/metro-runtime": "~4.0.1",
+    "@expo/metro-runtime": "~5.0.4",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-navigation/bottom-tabs": "^7.3.10",
@@ -80,7 +80,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.8.0",
     "react-native-url-polyfill": "^2.0.0",
-    "react-native-web": "~0.20.0",
+    "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
     "viem": "^1.19.9"
   },
