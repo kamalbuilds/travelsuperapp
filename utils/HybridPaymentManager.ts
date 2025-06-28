@@ -2,24 +2,24 @@ import { EventEmitter } from 'events';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import Purchases, {
-    CustomerInfo,
-    LOG_LEVEL,
-    MakePurchaseResult,
-    PurchasesOffering,
-    PurchasesPackage
+  CustomerInfo,
+  LOG_LEVEL,
+  MakePurchaseResult,
+  PurchasesOffering,
+  PurchasesPackage
 } from 'react-native-purchases';
 // import { Transak, TransakConfig } from '@transak/transak-sdk'; // Will implement as WebView
 import axios from 'axios';
 import { ethers } from 'ethers';
 
 import {
-    BACKEND_CONFIG,
-    FEATURE_FLAGS,
-    REVENUECAT_ENTITLEMENTS,
-    SUBSCRIPTION_PLANS,
-    SubscriptionTier,
-    getCurrentPlatformConfig,
-    validateConfig
+  BACKEND_CONFIG,
+  FEATURE_FLAGS,
+  REVENUECAT_ENTITLEMENTS,
+  SUBSCRIPTION_PLANS,
+  SubscriptionTier,
+  getCurrentPlatformConfig,
+  validateConfig
 } from '../constants/PaymentConfig';
 
 // Types and Interfaces
@@ -603,4 +603,5 @@ export class HybridPaymentManager {
 }
 
 // Export singleton instance
-export const paymentManager = HybridPaymentManager.getInstance(); 
+export const paymentManager = HybridPaymentManager.getInstance();
+
