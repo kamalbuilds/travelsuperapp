@@ -139,7 +139,7 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
       setShowTransakModal(true);
 
       // Start the crypto purchase process
-      await paymentManager.purchaseWithCrypto(selectedTier, selectedDuration);
+      // await paymentManager.purchaseWithCrypto(selectedTier, selectedDuration);
     } catch (error) {
       setIsLoading(false);
       console.log("transak api key", process.env.EXPO_PUBLIC_TRANSAK_API_KEY);
@@ -245,8 +245,8 @@ export const HybridPaymentScreen: React.FC<HybridPaymentScreenProps> = ({
       defaultFiatAmount: traditionalPrice.price,
       defaultFiatCurrency: 'USD',
       countryCode: 'US',
-      defaultCryptoCurrency: 'AVAX',
-      defaultNetwork: 'avaxcchain',
+      defaultCryptoCurrency: 'USDT',
+      defaultNetwork: 'algorand',
     };
 
     const handleEvent = (event: EventTypes, data: Order) => {
