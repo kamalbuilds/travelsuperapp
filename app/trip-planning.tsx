@@ -121,11 +121,12 @@ export default function TripPlanningScreen() {
     console.log('Received AI message:', message);
     
     // Convert ElevenLabs message to our chat format
-    if (message.type === 'agent_response' || message.content) {
+    // ElevenLabs sends: { source: "ai"|"user", message: "content" }
+    if (message.source && message.message) {
       const aiMessage: Message = {
         id: messages.length + 1,
-        type: 'ai',
-        message: message.content || message.text || 'AI response received',
+        type: message.source === 'ai' ? 'ai' : 'user',
+        message: message.message,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages(prev => [...prev, aiMessage]);
@@ -300,14 +301,39 @@ export default function TripPlanningScreen() {
       {isVoiceMode  && (
                 <View style={styles.domComponentContainer}>
                 <ConversationalAIDOMComponent
-                  dom={{ style: styles.domComponent }}
-                  platform={Platform.OS}
-                  get_battery_level={() => 100}
-                  change_brightness={() => {}}
-                  flash_screen={() => {}}
-                  onMessage={(message) => {
-                    console.log("🔍 Parent received message:", message);
-                    setMessages(prev => [...prev, message as unknown as Message]);
+                agentId={AGENT_ID}
+                onMessage={handleAIMessage}
+                onConnect={handleAIConnect}
+                onDisconnect={handleAIDisconnect}
+                onError={handleAIError}
+                  dom={{ 
+                    style: styles.domComponent,
+                    // WebView props to help ensure secure context and permissions
+                    allowsInlineMediaPlayback: true,
+                    mediaPlaybackRequiresUserAction: false,
+                    allowsBackForwardNavigationGestures: false,
+                    allowsLinkPreview: false,
+                    allowsFullscreenVideo: true,
+                    // Security and permissions
+                    mixedContentMode: 'always',
+                    cacheEnabled: true,
+                    javaScriptEnabled: true,
+                    domStorageEnabled: true,
+                    // Additional WebView props that might help
+                    ...(Platform.OS === 'android' && {
+                      onPermissionRequest: (request: any) => {
+                        console.log('🔐 Android Permission Request:', request);
+                        // Grant permissions for microphone and camera
+                        if (request.nativeEvent.resources) {
+                          request.nativeEvent.resources.forEach((resource: string) => {
+                            if (resource.includes('AUDIO_CAPTURE') || resource.includes('VIDEO_CAPTURE')) {
+                              console.log('✅ Granting permission for:', resource);
+                            }
+                          });
+                        }
+                        request.grant();
+                      }
+                    })
                   }}
                 />
               </View>
@@ -316,24 +342,27 @@ export default function TripPlanningScreen() {
       {/* Input Area */}
       <View style={[styles.inputContainer, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         {/* Voice Mode Toggle */}
-        {Platform.select({ web: false, default: true }) && (
-          <View style={styles.voiceModeContainer}>
-            <TouchableOpacity
-              style={[
-                styles.voiceModeToggle,
-                isVoiceMode && styles.voiceModeToggleActive,
-              ]}
-              onPress={handleVoiceModeToggle}
-            >
-              <Text style={[
-                styles.voiceModeText,
-                { color: isVoiceMode ? '#fff' : Colors[colorScheme ?? 'light'].text }
-              ]}>
-                {isVoiceMode ? '🎤 Voice AI Active' : '💬 Text Mode'}
+        <View style={styles.voiceModeContainer}>
+          <TouchableOpacity
+            style={[
+              styles.voiceModeToggle,
+              isVoiceMode && styles.voiceModeToggleActive,
+            ]}
+            onPress={handleVoiceModeToggle}
+          >
+            <Text style={[
+              styles.voiceModeText,
+              { color: isVoiceMode ? '#fff' : Colors[colorScheme ?? 'light'].text }
+            ]}>
+              {isVoiceMode ? '🎤 Voice AI Active' : '💬 Text Mode'}
+            </Text>
+            {Platform.OS !== 'web' && (
+              <Text style={[{ color: 'red' }]}>
+                🎤 Microphone: {Platform.OS}
               </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+            )}
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.inputRow}>
           <TouchableOpacity
@@ -341,8 +370,7 @@ export default function TripPlanningScreen() {
               styles.voiceButton,
               (isVoiceMode && isAIConnected) && styles.voiceButtonActive,
             ]}
-            onPress={Platform.select({ web: undefined, default: handleVoiceModeToggle })}
-            disabled={Platform.select({ web: true, default: false })}
+            onPress={handleVoiceModeToggle}
           >
             <Mic size={20} color={(isVoiceMode && isAIConnected) ? '#fff' : Colors[colorScheme ?? 'light'].tint} />
           </TouchableOpacity>
@@ -374,12 +402,6 @@ export default function TripPlanningScreen() {
             <Send size={20} color={inputText.trim() && !isVoiceMode ? '#fff' : Colors[colorScheme ?? 'light'].tabIconDefault} />
           </TouchableOpacity>
         </View>
-
-        {Platform.select({ web: true, default: false }) && (
-          <Text style={[styles.webOnlyNote, { color: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
-            Voice AI is available on mobile platforms (iOS & Android)
-          </Text>
-        )}
       </View>
     </SafeAreaView>
   );
@@ -637,10 +659,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
-  },
-  webOnlyNote: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 12,
   },
 });

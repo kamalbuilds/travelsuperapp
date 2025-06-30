@@ -6,10 +6,12 @@ import { Mic, MicOff } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Alert, Platform, Pressable, StyleSheet, View } from "react-native";
 import type { Message } from "./ChatMessage";
+import { AGENT_IDS } from '@/constants/ElevenLabsConfig';
 
 async function requestMicrophonePermission() {
   try {
     if (Platform.OS === 'web') {
+      console.log("consoling navigator",navigator);
       await navigator.mediaDevices.getUserMedia({ audio: true });
     }
     return true;
@@ -52,7 +54,7 @@ interface TravelVoiceAIProps {
 
 export default function TravelVoiceAI({
   onMessage,
-  agentId = "YOUR_AGENT_ID", // Replace with actual agent ID
+  agentId = AGENT_IDS.SOFIA, // Replace with actual agent ID
   size = 'medium',
   variant = 'primary'
 }: TravelVoiceAIProps) {
